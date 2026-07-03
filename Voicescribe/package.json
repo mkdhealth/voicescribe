@@ -1,0 +1,13 @@
+{
+  "name": "voicescribe",
+  "version": "1.0.0",
+  "description": "Speech recognition web app - live transcription, meetings, files, speaker ID, summaries",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
