@@ -161,6 +161,16 @@
         <button class="secondary" id="btnCopy-meet">Copy</button>
         <button class="secondary" id="btnDownload-meet">Download .txt</button>
         <button class="secondary" id="btnDownloadAudio-meet">Download recording</button>
+        <button class="secondary" id="btnPolish-meet">✨ Polish</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="polishCard-meet" style="border-left:3px solid var(--accent2)">
+      <h2>✨ Polished transcript</h2>
+      <div class="transcript-box" id="polishBox-meet" style="margin-top:10px"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopyPolish-meet">Copy</button>
+        <button class="secondary" id="btnDownloadPolish-meet">Download .txt</button>
       </div>
     </div>
   </div>
@@ -207,6 +217,7 @@
         <button class="secondary" id="btnCopyLive">Copy</button>
         <button class="secondary" id="btnDownloadLive">Download .txt</button>
         <button class="secondary" id="btnClearLive">Clear</button>
+        <button class="secondary" id="btnPolishLive" title="Add punctuation & capitalization using AI">✨ Polish</button>
       </div>
     </div>
   </div>
@@ -249,6 +260,16 @@
       <div class="toolbar">
         <button class="secondary" id="btnCopy-file">Copy</button>
         <button class="secondary" id="btnDownload-file">Download .txt</button>
+        <button class="secondary" id="btnPolish-file">✨ Polish</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="polishCard-file" style="border-left:3px solid var(--accent2)">
+      <h2>✨ Polished transcript</h2>
+      <div class="transcript-box" id="polishBox-file" style="margin-top:10px"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopyPolish-file">Copy</button>
+        <button class="secondary" id="btnDownloadPolish-file">Download .txt</button>
       </div>
     </div>
   </div>
@@ -561,6 +582,57 @@ function renameSpeaker(code) {
   else delete speakerNames[code];
   Object.keys(lastTranscripts).forEach(function (p) { renderTranscript(p); });
 }
+
+/* ================= POLISH (punctuation restore via LeMUR) ================= */
+async function polishText(text) {
+  var r = await fetch("/api/polish", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ text: text })
+  });
+  var d = await r.json();
+  if (!r.ok || d.error) throw new Error(d.error || "Polish failed (HTTP " + r.status + ")");
+  return d.response || "";
+}
+
+function wirePolish(panel) {
+  $("btnPolish-" + panel).addEventListener("click", async function () {
+    if (!plainTexts[panel]) return;
+    var btn = this, orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Polishing…";
+    try {
+      var out = await polishText(plainTexts[panel]);
+      $("polishBox-" + panel).textContent = out;
+      $("polishCard-" + panel).classList.remove("hidden");
+      $("btnCopyPolish-" + panel).onclick = function () { copyText(out, this); };
+      $("btnDownloadPolish-" + panel).onclick = function () { downloadText("polished-transcript.txt", out); };
+    } catch (e) {
+      alert("Polish failed: " + e.message);
+    }
+    btn.disabled = false;
+    btn.textContent = orig;
+  });
+}
+wirePolish("meet");
+wirePolish("file");
+
+$("btnPolishLive").addEventListener("click", async function () {
+  if (!finalText.trim()) return;
+  var btn = this, orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Polishing…";
+  liveErr.classList.add("hidden");
+  try {
+    finalText = await polishText(finalText);
+    updateLiveBox("");
+  } catch (e) {
+    liveErr.textContent = "Polish failed: " + e.message;
+    liveErr.classList.remove("hidden");
+  }
+  btn.disabled = false;
+  btn.textContent = orig;
+});
 
 /* ================= FILE UPLOAD + URL ================= */
 var dropzone = $("dropzone");
