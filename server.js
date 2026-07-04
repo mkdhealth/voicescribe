@@ -14,7 +14,11 @@ const AAI_KEY = process.env.ASSEMBLYAI_API_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY; // optional — powers the Polish feature
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const AAI = "https://api.assemblyai.com/v2";
-const PUBLIC_DIR = path.join(__dirname, "public");
+// Serve the frontend from ./public if it exists, otherwise from this folder
+// (lets index.html sit right next to server.js — no folder structure needed).
+const PUBLIC_DIR = fs.existsSync(path.join(__dirname, "public"))
+  ? path.join(__dirname, "public")
+  : __dirname;
 const MAX_UPLOAD = 500 * 1024 * 1024; // 500 MB
 
 if (!AAI_KEY) {
