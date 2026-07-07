@@ -81,8 +81,20 @@
   .btn-full { width: 100%; }
   .auth-toggle { font-size: 13px; color: var(--muted); text-align: center; margin-top: 14px; }
   .auth-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  /* ---- Mobile header ---- */
+  @media (max-width: 680px) {
+    header { flex-wrap: wrap; padding: 14px 16px; gap: 10px; }
+    header p { display: none; }              /* hide the long tagline on phones */
+    header h1 { font-size: 17px; }
+    .userbox { width: 100%; justify-content: space-between; gap: 10px; }
+    .userbox > div { text-align: left !important; }
+    .user-email { font-size: 12px; word-break: break-all; }
+    .usage-bar { width: 120px; }
+    .container { padding: 16px 12px 60px; }
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body>
 <header>
@@ -99,6 +111,7 @@
       <div class="usage-line" id="usageLine"></div>
       <div class="usage-bar"><div id="usageFill"></div></div>
     </div>
+    <button id="btnUpgrade" class="hidden" style="background:var(--yellow); color:#1a1a1a; font-weight:700; padding:8px 14px">⭐ Upgrade</button>
     <button class="secondary" id="btnSignOut" style="padding:8px 14px">Sign out</button>
   </div>
 </header>
@@ -335,10 +348,12 @@ function $(id) { return document.getElementById(id); }
 var sb = null;
 var authToken = null;
 var authMode = "signin"; // or "signup"
+var appCfg = {};
 
 async function initAuth() {
   try {
     var cfg = await (await fetch("/api/config")).json();
+    appCfg = cfg;
     $("authSub").innerHTML = "Sign in to get <b>" + (cfg.freeMinutes || 60) + " free minutes</b> of transcription every month.";
     sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
     sb.auth.onAuthStateChange(function (_event, session) { applySession(session); });
@@ -369,7 +384,13 @@ async function refreshUsage() {
     var d = await r.json();
     var usedMin = Math.round(d.usedSeconds / 60);
     var limitMin = Math.round(d.limitSeconds / 60);
-    $("usageLine").textContent = usedMin + " of " + limitMin + " free min used this month";
+    if (d.isPro) {
+      var until = d.proUntil ? new Date(d.proUntil).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
+      $("usageLine").textContent = usedMin + " of " + limitMin + " min · ⭐ Pro until " + until;
+    } else {
+      $("usageLine").textContent = usedMin + " of " + limitMin + " free min used this month";
+    }
+    $("btnUpgrade").classList.toggle("hidden", !!d.isPro || !appCfg.paymentsEnabled || !window.Razorpay);
     var pct = Math.min(100, d.limitSeconds ? (d.usedSeconds / d.limitSeconds) * 100 : 0);
     $("usageFill").style.width = pct + "%";
     $("usageFill").classList.toggle("full", pct >= 100);
@@ -433,6 +454,52 @@ $("authSwitch").addEventListener("click", function () {
 });
 
 $("btnSignOut").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
+
+/* ---------------- Upgrade to Pro (Razorpay 30-day pass) ---------------- */
+$("btnUpgrade").addEventListener("click", async function () {
+  var btn = this;
+  btn.disabled = true;
+  try {
+    var r = await authFetch("/api/create-order", { method: "POST" });
+    var d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Could not start the payment. Please try again.");
+    var rzp = new Razorpay({
+      key: d.keyId,
+      amount: d.amount,
+      currency: d.currency,
+      order_id: d.orderId,
+      name: "Stenoji",
+      description: "Pro — " + d.minutes + " minutes for " + d.days + " days",
+      image: "assets/mascot/stenoji-owl-avatar-circle.png",
+      prefill: { email: $("userEmail").textContent },
+      theme: { color: "#4f7cff" },
+      handler: async function (resp) {
+        try {
+          var vr = await authFetch("/api/verify-payment", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(resp)
+          });
+          var vd = await vr.json();
+          if (!vr.ok || !vd.ok) throw new Error(vd.error || "Verification failed.");
+          alert("🎉 Welcome to Pro! You have " + d.minutes + " minutes/month until " +
+            new Date(vd.proUntil).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) + ".");
+          refreshUsage();
+        } catch (e) {
+          alert("Your payment went through but we couldn't confirm it automatically: " + e.message +
+            "\n\nDon't worry — email support@stenoji.com with your payment ID and we'll activate Pro manually.");
+        }
+      }
+    });
+    rzp.on("payment.failed", function (resp) {
+      alert("Payment failed: " + ((resp.error && resp.error.description) || "please try again."));
+    });
+    rzp.open();
+  } catch (e) {
+    alert(e.message);
+  }
+  btn.disabled = false;
+});
 
 initAuth();
 
