@@ -3,339 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stenoji — AI meeting notes &amp; transcription in 14+ Indian languages</title>
-<meta name="description" content="Stenoji turns meetings, voice notes and audio files into accurate transcripts with speaker names and AI summaries — in Hindi, Tamil, Telugu, Bengali, Marathi and 10+ more languages. Start free.">
+<title>Privacy Policy — Stenoji</title>
+<meta name="robots" content="index,follow">
 <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/app-icons/stenoji-app-icon-180.png">
-<meta name="theme-color" content="#071D49">
-<meta property="og:title" content="Stenoji — AI meeting notes in your language">
-<meta property="og:description" content="Transcripts, speaker identification and AI summaries for meetings and audio files. 14+ Indian languages. 60 free minutes every month.">
-<meta property="og:image" content="https://stenoji.com/assets/social/stenoji-og-image-1200x630.png">
-<meta property="og:url" content="https://stenoji.com">
-<meta property="og:type" content="website">
 <style>
-  :root {
-    --navy: #071D49; --blue: #2076F3; --blue2: #4DA3FF; --sky: #EAF3FF; --sky2: #F6FAFF;
-    --teal: #22C7B8; --amber: #F6A935; --ink: #13233F; --muted: #6B7A90; --line: #D8E6F7;
-    --bg: #F7FAFF;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body { font-family: Inter, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.5; }
-  img { max-width: 100%; display: block; }
-  a { text-decoration: none; }
-  .container { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
-
-  /* ---- Nav ---- */
-  .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 16px; }
-  .nav .logo { height: 44px; width: auto; }
-  .nav-links { display: flex; gap: 26px; align-items: center; }
-  .nav-links a { color: var(--ink); font-weight: 600; font-size: 15px; }
-  .nav-links a:hover { color: var(--blue); }
-  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 13px 24px; border-radius: 14px; font-weight: 700; font-size: 15.5px; cursor: pointer; border: none; }
-  .btn-primary { color: #fff; background: var(--blue); box-shadow: 0 12px 28px rgba(32,118,243,.25); }
-  .btn-primary:hover { background: #1a63d0; }
-  .btn-light { color: var(--navy); background: #fff; border: 1px solid var(--line); }
-  .btn-light:hover { border-color: var(--blue2); }
-  @media (max-width: 760px) { .nav-links a:not(.btn) { display: none; } }
-
-  /* ---- Hero ---- */
-  .hero { padding: 22px 0 60px; }
-  .hero-card { position: relative; overflow: hidden; border-radius: 36px; background: radial-gradient(circle at 72% 40%, #fff 0%, var(--sky) 100%); box-shadow: 0 24px 70px rgba(8,34,74,.13); padding: clamp(28px, 5vw, 60px); display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; align-items: center; }
-  .hero h1 { font-size: clamp(34px, 5vw, 60px); line-height: 1.04; letter-spacing: -0.04em; color: var(--navy); margin-bottom: 18px; }
-  .hero h1 .hl { color: var(--blue); }
-  .hero .sub { font-size: clamp(16px, 2vw, 20px); color: var(--muted); margin-bottom: 26px; max-width: 540px; }
-  .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 26px; }
-  .hero-stats { display: flex; gap: 12px; flex-wrap: wrap; }
-  .stat { background: rgba(255,255,255,.9); border: 1px solid var(--line); border-radius: 16px; padding: 10px 16px; box-shadow: 0 10px 25px rgba(8,34,74,.07); }
-  .stat .k { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-  .stat .v { font-size: 17px; color: var(--navy); font-weight: 800; }
-  .hero-mascot-wrap { position: relative; min-height: 320px; }
-  .hero-mascot { width: min(100%, 430px); margin: 0 auto; filter: drop-shadow(0 24px 40px rgba(8,34,74,.22)); }
-  .float-chip { position: absolute; background: rgba(255,255,255,.94); border: 1px solid var(--line); border-radius: 16px; padding: 10px 16px; box-shadow: 0 14px 35px rgba(8,34,74,.12); font-weight: 700; color: var(--navy); font-size: 14px; display: flex; gap: 8px; align-items: center; }
-  .float-chip img { width: 20px; height: 20px; }
-  .chip-1 { top: 6%; left: -2%; }
-  .chip-2 { top: 38%; right: -2%; }
-  .chip-3 { bottom: 8%; left: 4%; }
-  @media (max-width: 860px) {
-    .hero-card { grid-template-columns: 1fr; }
-    .float-chip { display: none; }
-    .hero-mascot-wrap { min-height: 0; }
-    .hero-mascot { width: min(80%, 320px); }
-  }
-
-  /* ---- Sections ---- */
-  section { padding: 56px 0; }
-  .section-title { text-align: center; max-width: 640px; margin: 0 auto 36px; }
-  .section-title h2 { font-size: clamp(28px, 4vw, 42px); color: var(--navy); letter-spacing: -.03em; margin-bottom: 10px; }
-  .section-title p { color: var(--muted); font-size: 17px; }
-
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  @media (max-width: 960px) { .grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
-  .feature { background: #fff; border: 1px solid var(--line); border-radius: 24px; overflow: hidden; box-shadow: 0 14px 40px rgba(8,34,74,.07); }
-  .feature img { width: 100%; aspect-ratio: 4/3; object-fit: cover; }
-  .feature .body { padding: 20px 22px 24px; }
-  .feature h3 { color: var(--navy); font-size: 19px; margin-bottom: 6px; }
-  .feature p { color: var(--muted); font-size: 14.5px; }
-
-  .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  @media (max-width: 760px) { .steps-grid { grid-template-columns: 1fr; } }
-  .step { background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 26px; box-shadow: 0 14px 40px rgba(8,34,74,.07); }
-  .step .num { width: 40px; height: 40px; border-radius: 12px; background: var(--sky); color: var(--blue); font-weight: 800; font-size: 18px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
-  .step h3 { color: var(--navy); font-size: 18px; margin-bottom: 6px; }
-  .step p { color: var(--muted); font-size: 14.5px; }
-
-  .showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: center; margin-bottom: 46px; }
-  .showcase:last-child { margin-bottom: 0; }
-  @media (max-width: 860px) { .showcase { grid-template-columns: 1fr; } .showcase.flip .txt { order: -1; } }
-  .showcase img { border-radius: 28px; box-shadow: 0 22px 60px rgba(8,34,74,.12); }
-  .showcase h3 { font-size: clamp(22px, 3vw, 30px); color: var(--navy); letter-spacing: -.02em; margin-bottom: 10px; }
-  .showcase p { color: var(--muted); font-size: 16px; }
-
-  .lang-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 760px; margin: 0 auto; }
-  .lang-chip { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 9px 18px; font-weight: 600; color: var(--navy); font-size: 14.5px; box-shadow: 0 8px 20px rgba(8,34,74,.05); }
-  .lang-chip.more { background: var(--sky); color: var(--blue); }
-
-  .pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 380px)); gap: 22px; justify-content: center; }
-  @media (max-width: 720px) { .pricing-grid { grid-template-columns: 1fr; } }
-  .price-card { background: #fff; border: 1px solid var(--line); border-radius: 28px; padding: 30px; box-shadow: 0 14px 40px rgba(8,34,74,.07); }
-  .price-card.featured { border: 2px solid var(--blue); position: relative; }
-  .price-card .plan { font-weight: 800; color: var(--navy); font-size: 18px; }
-  .price-card .price { font-size: 40px; font-weight: 800; color: var(--navy); margin: 10px 0 2px; letter-spacing: -.03em; }
-  .price-card .per { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
-  .price-card ul { list-style: none; margin-bottom: 22px; }
-  .price-card li { padding: 7px 0 7px 28px; position: relative; color: var(--ink); font-size: 15px; }
-  .price-card li::before { content: "✓"; position: absolute; left: 0; color: var(--teal); font-weight: 800; }
-  .ribbon { position: absolute; top: -13px; right: 24px; background: var(--amber); color: #fff; font-weight: 800; font-size: 12px; padding: 5px 14px; border-radius: 999px; }
-
-  .cta-band { background: linear-gradient(120deg, var(--navy), #0d3170); border-radius: 32px; padding: clamp(28px, 5vw, 54px); display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; box-shadow: 0 24px 70px rgba(8,34,74,.25); }
-  @media (max-width: 720px) { .cta-band { grid-template-columns: 1fr; text-align: center; } .cta-band img { margin: 0 auto; } }
-  .cta-band h2 { color: #fff; font-size: clamp(24px, 4vw, 36px); letter-spacing: -.02em; margin-bottom: 8px; }
-  .cta-band p { color: #b9cdf3; margin-bottom: 20px; font-size: 16px; }
-  .cta-band img { width: 150px; }
-
-  footer { padding: 40px 0 50px; border-top: 1px solid var(--line); margin-top: 30px; }
-  .foot { display: flex; justify-content: space-between; align-items: center; gap: 18px; flex-wrap: wrap; }
-  .foot .logo { height: 36px; }
-  .foot-links { display: flex; gap: 22px; }
-  .foot-links a { color: var(--muted); font-weight: 600; font-size: 14px; }
-  .foot-links a:hover { color: var(--blue); }
-  .foot .copy { color: var(--muted); font-size: 13.5px; }
+  :root { --navy:#071D49; --blue:#2076F3; --ink:#13233F; --muted:#6B7A90; --line:#D8E6F7; --bg:#F7FAFF; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family: Inter,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--ink); background:var(--bg); line-height:1.65; }
+  .container { width:min(820px, calc(100% - 32px)); margin:0 auto; padding-bottom:70px; }
+  .nav { display:flex; align-items:center; justify-content:space-between; padding:18px 0 26px; }
+  .nav img { height:40px; }
+  .nav a.btn { background:var(--blue); color:#fff; padding:10px 18px; border-radius:12px; font-weight:700; text-decoration:none; font-size:14.5px; }
+  h1 { color:var(--navy); font-size:34px; letter-spacing:-.02em; margin-bottom:6px; }
+  .updated { color:var(--muted); font-size:14px; margin-bottom:28px; }
+  h2 { color:var(--navy); font-size:20px; margin:30px 0 8px; }
+  p, li { color:var(--ink); font-size:15.5px; margin-bottom:10px; }
+  ul { padding-left:22px; margin-bottom:10px; }
+  a { color:var(--blue); }
+  .card { background:#fff; border:1px solid var(--line); border-radius:20px; padding:34px; box-shadow:0 14px 40px rgba(8,34,74,.06); }
 </style>
 </head>
 <body>
-
 <div class="container">
   <nav class="nav">
-    <a href="/"><img class="logo" src="assets/icons/stenoji-logo.svg" alt="Stenoji.com"></a>
-    <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#how">How it works</a>
-      <a href="#languages">Languages</a>
-      <a href="#pricing">Pricing</a>
-      <a class="btn btn-primary" href="/app.html">Open app</a>
-    </div>
+    <a href="/"><img src="assets/icons/stenoji-logo.svg" alt="Stenoji.com"></a>
+    <a class="btn" href="/app.html">Open app</a>
   </nav>
-</div>
+  <div class="card">
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: 8 July 2026</p>
 
-<!-- ================= HERO ================= -->
-<div class="container hero">
-  <div class="hero-card">
-    <div>
-      <h1>Meetings to notes,<br>in <span class="hl">your language</span></h1>
-      <p class="sub">Stenoji transcribes meetings, voice notes, and audio or video files — with speaker names and AI summaries — in Hindi, Tamil, Telugu, Bengali and 10+ more languages. Hinglish? No problem.</p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="/app.html">Start free — 60 min/month</a>
-        <a class="btn btn-light" href="#features">See what it does</a>
-      </div>
-      <div class="hero-stats">
-        <div class="stat"><div class="k">Languages</div><div class="v">14+</div></div>
-        <div class="stat"><div class="k">Speaker ID</div><div class="v">Automatic</div></div>
-        <div class="stat"><div class="k">Free plan</div><div class="v">₹0</div></div>
-      </div>
-    </div>
-    <div class="hero-mascot-wrap">
-      <img class="hero-mascot" src="assets/mascot/stenoji-owl-mascot-transparent.png" alt="Stenoji owl mascot taking meeting notes">
-      <div class="float-chip chip-1"><img src="assets/icons/icon-microphone.svg" alt=""> Voice capture</div>
-      <div class="float-chip chip-2"><img src="assets/icons/icon-summary.svg" alt=""> Smart summary</div>
-      <div class="float-chip chip-3"><img src="assets/icons/icon-meeting.svg" alt=""> Meeting notes</div>
-    </div>
+    <p>Stenoji ("we", "us") is a transcription service operated from India, available at stenoji.com. This policy explains what data we handle and how. We keep it in plain language because we want you to actually read it.</p>
+
+    <h2>What we collect</h2>
+    <ul>
+      <li><b>Account details:</b> your email address and, if you sign in with Google, your name and profile picture as shared by Google. We never see your password when you use Google sign-in; email/password credentials are stored securely by our authentication provider (Supabase).</li>
+      <li><b>Usage records:</b> how many minutes of transcription you use each month, so we can apply your plan's limits.</li>
+      <li><b>Audio you submit:</b> recordings, uploads and meeting audio you choose to transcribe.</li>
+    </ul>
+
+    <h2>How your audio is processed</h2>
+    <p>Audio you submit is sent securely to our transcription provider (AssemblyAI) to generate the transcript, and transcripts you choose to Polish are sent to Google's Gemini API to restore punctuation. We do not currently store your transcripts or audio on our own servers after processing — results are delivered to your browser. Our processing partners retain data temporarily in line with their own policies (see AssemblyAI and Google AI privacy documentation).</p>
+
+    <h2>Your responsibility when recording others</h2>
+    <p>You must have the consent of meeting participants or other recorded persons before transcribing conversations, as required by applicable law. Stenoji provides the tool; you are responsible for using it lawfully.</p>
+
+    <h2>What we don't do</h2>
+    <ul>
+      <li>We do not sell your personal data.</li>
+      <li>We do not use your audio or transcripts to train AI models.</li>
+      <li>We do not show ads.</li>
+    </ul>
+
+    <h2>Cookies &amp; local storage</h2>
+    <p>We use browser local storage to keep you signed in. No advertising or cross-site tracking cookies are used.</p>
+
+    <h2>Service providers we rely on</h2>
+    <p>Supabase (accounts and usage database), AssemblyAI (speech-to-text), Google Gemini (transcript polishing), Render (hosting), and — once paid plans launch — Razorpay (payments; we never see or store your card details).</p>
+
+    <h2>Data deletion</h2>
+    <p>To delete your account and associated data, email us at <a href="mailto:support@stenoji.com">support@stenoji.com</a> from your registered address. We will action deletion within 30 days.</p>
+
+    <h2>Changes</h2>
+    <p>If we materially change this policy, we'll update the date above and, for significant changes, notify you in the app or by email.</p>
+
+    <h2>Contact</h2>
+    <p>Questions or concerns: <a href="mailto:support@stenoji.com">support@stenoji.com</a></p>
   </div>
 </div>
-
-<!-- ================= FEATURES ================= -->
-<section id="features">
-  <div class="container">
-    <div class="section-title">
-      <h2>Everything a good steno does — powered by AI</h2>
-      <p>Record, upload or capture a meeting. Stenoji does the writing.</p>
-    </div>
-    <div class="grid">
-      <div class="feature">
-        <img src="assets/cards/card-voice-capture-800x600.png" alt="Live voice capture illustration" loading="lazy">
-        <div class="body"><h3>Live voice capture</h3><p>Speak into your mic and watch the words appear in real time. Great for dictation and quick notes.</p></div>
-      </div>
-      <div class="feature">
-        <img src="assets/cards/card-ai-assistant-800x600.png" alt="Online meeting transcription illustration" loading="lazy">
-        <div class="body"><h3>Online meeting transcription</h3><p>Capture Zoom, Google Meet or Teams meetings from a browser tab. Get the full transcript when you stop.</p></div>
-      </div>
-      <div class="feature">
-        <img src="assets/cards/card-audio-video-800x600.png" alt="Audio and video file transcription illustration" loading="lazy">
-        <div class="body"><h3>Audio &amp; video files</h3><p>Upload MP3, WAV, MP4 and more — or paste a direct media link. Up to 500 MB per file.</p></div>
-      </div>
-      <div class="feature">
-        <img src="assets/cards/card-speech-to-text-800x600.png" alt="Multilingual speech to text illustration" loading="lazy">
-        <div class="body"><h3>14+ Indian languages</h3><p>Hindi, Tamil, Telugu, Bengali, Marathi, Gujarati and more — with auto-detect that handles Hinglish naturally.</p></div>
-      </div>
-      <div class="feature">
-        <img src="assets/cards/card-action-items-800x600.png" alt="Speaker identification illustration" loading="lazy">
-        <div class="body"><h3>Speaker identification</h3><p>Stenoji labels who said what automatically. Click a name to rename Speaker A to Priya.</p></div>
-      </div>
-      <div class="feature">
-        <img src="assets/cards/card-smart-summary-800x600.png" alt="AI summary illustration" loading="lazy">
-        <div class="body"><h3>AI summaries &amp; Polish</h3><p>Get key points as bullets, and one-click Polish that fixes punctuation without changing your words.</p></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= HOW IT WORKS ================= -->
-<section id="how" style="background:#fff; border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
-  <div class="container">
-    <div class="section-title">
-      <h2>How it works</h2>
-      <p>Three steps. No installation, works in your browser.</p>
-    </div>
-    <div class="steps-grid">
-      <div class="step"><div class="num">1</div><h3>Record or upload</h3><p>Use your mic, capture a meeting tab, or drop in an audio/video file.</p></div>
-      <div class="step"><div class="num">2</div><h3>Stenoji transcribes</h3><p>Accurate speech-to-text with automatic language detection and speaker labels.</p></div>
-      <div class="step"><div class="num">3</div><h3>Summarise &amp; share</h3><p>AI summary, polished punctuation, and one-click copy or .txt download.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= SHOWCASES ================= -->
-<section>
-  <div class="container">
-    <div class="showcase">
-      <img src="assets/sections/section-meeting-transcription-1200x700.png" alt="Meeting transcription with speaker labels" loading="lazy">
-      <div class="txt">
-        <h3>Never take meeting minutes again</h3>
-        <p>Join your meeting, let Stenoji listen, and get a complete transcript with every speaker identified — plus a summary you can paste straight into an email.</p>
-      </div>
-    </div>
-    <div class="showcase flip">
-      <div class="txt">
-        <h3>Summaries that respect your time</h3>
-        <p>A one-hour discussion becomes a handful of clear bullet points. Read in one minute what took sixty to say.</p>
-      </div>
-      <img src="assets/sections/section-smart-summary-1200x700.png" alt="Smart summary example" loading="lazy">
-    </div>
-    <div class="showcase">
-      <img src="assets/sections/section-voice-to-notes-1200x700.png" alt="Voice notes converted to text" loading="lazy">
-      <div class="txt">
-        <h3>Think out loud, get clean notes</h3>
-        <p>Dictate ideas on the go. Stenoji's Polish button restores punctuation and capitalisation without changing a single word you said.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= LANGUAGES ================= -->
-<section id="languages" style="background:#fff; border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
-  <div class="container">
-    <div class="section-title">
-      <h2>Built for how India actually speaks</h2>
-      <p>Auto-detect follows the conversation even when it switches between languages mid-sentence.</p>
-    </div>
-    <div class="lang-chips">
-      <span class="lang-chip">हिन्दी Hindi</span>
-      <span class="lang-chip">தமிழ் Tamil</span>
-      <span class="lang-chip">తెలుగు Telugu</span>
-      <span class="lang-chip">বাংলা Bengali</span>
-      <span class="lang-chip">मराठी Marathi</span>
-      <span class="lang-chip">ગુજરાતી Gujarati</span>
-      <span class="lang-chip">ಕನ್ನಡ Kannada</span>
-      <span class="lang-chip">മലയാളം Malayalam</span>
-      <span class="lang-chip">ਪੰਜਾਬੀ Punjabi</span>
-      <span class="lang-chip">اردو Urdu</span>
-      <span class="lang-chip">অসমীয়া Assamese</span>
-      <span class="lang-chip">नेपाली Nepali</span>
-      <span class="lang-chip">سنڌي Sindhi</span>
-      <span class="lang-chip">English</span>
-      <span class="lang-chip more">+ Hinglish auto-detect</span>
-    </div>
-  </div>
-</section>
-
-<!-- ================= PRICING ================= -->
-<section id="pricing">
-  <div class="container">
-    <div class="section-title">
-      <h2>Simple pricing</h2>
-      <p>Start free. Upgrade when you need more minutes.</p>
-    </div>
-    <div class="pricing-grid">
-      <div class="price-card">
-        <div class="plan">Free</div>
-        <div class="price">₹0</div>
-        <div class="per">forever</div>
-        <ul>
-          <li>60 transcription minutes / month</li>
-          <li>All 14+ languages &amp; auto-detect</li>
-          <li>Speaker identification</li>
-          <li>AI summaries &amp; Polish</li>
-          <li>Meeting, mic and file transcription</li>
-        </ul>
-        <a class="btn btn-primary" href="/app.html" style="width:100%">Start free</a>
-      </div>
-      <div class="price-card featured">
-        <div class="ribbon">COMING SOON</div>
-        <div class="plan">Pro</div>
-        <div class="price">₹—</div>
-        <div class="per">per month</div>
-        <ul>
-          <li>Many more minutes every month</li>
-          <li>Priority transcription</li>
-          <li>Transcript history &amp; search</li>
-          <li>Everything in Free</li>
-        </ul>
-        <a class="btn btn-light" href="/app.html" style="width:100%">Join the free plan first</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= CTA ================= -->
-<section>
-  <div class="container">
-    <div class="cta-band">
-      <div>
-        <h2>Your meetings, remembered perfectly.</h2>
-        <p>Sign in with Google and get 60 free minutes of transcription every month. No credit card needed.</p>
-        <a class="btn btn-primary" href="/app.html" style="background:var(--amber); box-shadow:0 12px 28px rgba(246,169,53,.35)">Open Stenoji free</a>
-      </div>
-      <img src="assets/mascot/stenoji-owl-head-transparent.png" alt="Stenoji owl">
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="container foot">
-    <img class="logo" src="assets/icons/stenoji-logo.svg" alt="Stenoji.com">
-    <div class="foot-links">
-      <a href="#features">Features</a>
-      <a href="#pricing">Pricing</a>
-      <a href="/app.html">Open app</a>
-      <a href="/terms.html">Terms</a>
-      <a href="/privacy.html">Privacy</a>
-      <a href="/refunds.html">Refunds</a>
-      <a href="mailto:support@stenoji.com">support@stenoji.com</a>
-    </div>
-    <div class="copy">© 2026 Stenoji · Made in India 🇮🇳</div>
-  </div>
-</footer>
-
 </body>
 </html>
