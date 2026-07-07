@@ -3,873 +3,335 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VoiceScribe</title>
+<title>Stenoji — AI meeting notes &amp; transcription in 14+ Indian languages</title>
+<meta name="description" content="Stenoji turns meetings, voice notes and audio files into accurate transcripts with speaker names and AI summaries — in Hindi, Tamil, Telugu, Bengali, Marathi and 10+ more languages. Start free.">
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/app-icons/stenoji-app-icon-180.png">
+<meta name="theme-color" content="#071D49">
+<meta property="og:title" content="Stenoji — AI meeting notes in your language">
+<meta property="og:description" content="Transcripts, speaker identification and AI summaries for meetings and audio files. 14+ Indian languages. 60 free minutes every month.">
+<meta property="og:image" content="https://stenoji.com/assets/social/stenoji-og-image-1200x630.png">
+<meta property="og:url" content="https://stenoji.com">
+<meta property="og:type" content="website">
 <style>
   :root {
-    --bg: #0f1117; --panel: #181b24; --panel2: #1f2330; --border: #2a2f3e;
-    --text: #e8eaf0; --muted: #9aa1b2; --accent: #4f7cff; --accent2: #7c5cff;
-    --green: #2ecc8f; --red: #ff5c6c; --yellow: #ffc857;
+    --navy: #071D49; --blue: #2076F3; --blue2: #4DA3FF; --sky: #EAF3FF; --sky2: #F6FAFF;
+    --teal: #22C7B8; --amber: #F6A935; --ink: #13233F; --muted: #6B7A90; --line: #D8E6F7;
+    --bg: #F7FAFF;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-  header { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-  .logo { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  header h1 { font-size: 18px; font-weight: 600; }
-  header p { font-size: 12px; color: var(--muted); }
-  .container { max-width: 980px; margin: 0 auto; padding: 24px 20px 60px; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .tab { padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; font-size: 14px; }
-  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
-  .card h2 { font-size: 15px; margin-bottom: 6px; }
-  .card .hint { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-bottom: 12px; }
-  .card .hint b { color: var(--text); }
-  button { font-family: inherit; font-size: 14px; padding: 10px 18px; border-radius: 10px; border: none; cursor: pointer; background: var(--accent); color: #fff; }
-  button.secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
-  button.danger { background: var(--red); }
-  button:disabled { opacity: 0.45; cursor: not-allowed; }
-  input[type="text"], select { font-family: inherit; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); width: 100%; }
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .transcript-box { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-height: 140px; max-height: 420px; overflow-y: auto; font-size: 15px; line-height: 1.7; white-space: pre-wrap; }
-  .interim { color: var(--muted); font-style: italic; }
-  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; }
-  .status-dot.live { background: var(--red); animation: pulse 1.2s infinite; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
-  .statusline { font-size: 13px; color: var(--muted); }
-  .dropzone { border: 2px dashed var(--border); border-radius: 12px; padding: 34px; text-align: center; color: var(--muted); cursor: pointer; font-size: 14px; transition: border-color 0.15s, background 0.15s; }
-  .dropzone.dragover { border-color: var(--accent); background: rgba(79,124,255,0.06); }
-  .utterance { display: flex; gap: 12px; margin-bottom: 14px; }
-  .speaker-chip { flex-shrink: 0; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; height: fit-content; margin-top: 2px; color: #fff; cursor: pointer; user-select: none; }
-  .speaker-chip:hover { outline: 2px solid rgba(255,255,255,0.4); }
-  .utterance .text { flex: 1; }
-  .utterance .ts { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
-  .summary-card { border-left: 3px solid var(--green); }
-  .caption-line { font-size: 16px; line-height: 1.6; }
-  .progressbar { height: 6px; border-radius: 3px; background: var(--panel2); overflow: hidden; margin-top: 10px; }
-  .progressbar > div { height: 100%; width: 30%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); animation: slide 1.4s ease-in-out infinite; }
-  @keyframes slide { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
-  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--border); color: var(--muted); }
-  .error { color: var(--red); font-size: 13px; margin-top: 8px; }
-  .warn { color: var(--yellow); font-size: 13px; margin-top: 8px; }
-  .hidden { display: none !important; }
-  .toolbar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-  .steps { font-size: 12.5px; color: var(--muted); line-height: 1.7; margin: 8px 0 12px; padding-left: 18px; }
-  .steps b { color: var(--text); }
-  label.chk { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; cursor: pointer; }
-  .divider { text-align: center; color: var(--muted); font-size: 12px; margin: 14px 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: Inter, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.5; }
+  img { max-width: 100%; display: block; }
+  a { text-decoration: none; }
+  .container { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+
+  /* ---- Nav ---- */
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 16px; }
+  .nav .logo { height: 44px; width: auto; }
+  .nav-links { display: flex; gap: 26px; align-items: center; }
+  .nav-links a { color: var(--ink); font-weight: 600; font-size: 15px; }
+  .nav-links a:hover { color: var(--blue); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 13px 24px; border-radius: 14px; font-weight: 700; font-size: 15.5px; cursor: pointer; border: none; }
+  .btn-primary { color: #fff; background: var(--blue); box-shadow: 0 12px 28px rgba(32,118,243,.25); }
+  .btn-primary:hover { background: #1a63d0; }
+  .btn-light { color: var(--navy); background: #fff; border: 1px solid var(--line); }
+  .btn-light:hover { border-color: var(--blue2); }
+  @media (max-width: 760px) { .nav-links a:not(.btn) { display: none; } }
+
+  /* ---- Hero ---- */
+  .hero { padding: 22px 0 60px; }
+  .hero-card { position: relative; overflow: hidden; border-radius: 36px; background: radial-gradient(circle at 72% 40%, #fff 0%, var(--sky) 100%); box-shadow: 0 24px 70px rgba(8,34,74,.13); padding: clamp(28px, 5vw, 60px); display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; align-items: center; }
+  .hero h1 { font-size: clamp(34px, 5vw, 60px); line-height: 1.04; letter-spacing: -0.04em; color: var(--navy); margin-bottom: 18px; }
+  .hero h1 .hl { color: var(--blue); }
+  .hero .sub { font-size: clamp(16px, 2vw, 20px); color: var(--muted); margin-bottom: 26px; max-width: 540px; }
+  .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 26px; }
+  .hero-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stat { background: rgba(255,255,255,.9); border: 1px solid var(--line); border-radius: 16px; padding: 10px 16px; box-shadow: 0 10px 25px rgba(8,34,74,.07); }
+  .stat .k { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .stat .v { font-size: 17px; color: var(--navy); font-weight: 800; }
+  .hero-mascot-wrap { position: relative; min-height: 320px; }
+  .hero-mascot { width: min(100%, 430px); margin: 0 auto; filter: drop-shadow(0 24px 40px rgba(8,34,74,.22)); }
+  .float-chip { position: absolute; background: rgba(255,255,255,.94); border: 1px solid var(--line); border-radius: 16px; padding: 10px 16px; box-shadow: 0 14px 35px rgba(8,34,74,.12); font-weight: 700; color: var(--navy); font-size: 14px; display: flex; gap: 8px; align-items: center; }
+  .float-chip img { width: 20px; height: 20px; }
+  .chip-1 { top: 6%; left: -2%; }
+  .chip-2 { top: 38%; right: -2%; }
+  .chip-3 { bottom: 8%; left: 4%; }
+  @media (max-width: 860px) {
+    .hero-card { grid-template-columns: 1fr; }
+    .float-chip { display: none; }
+    .hero-mascot-wrap { min-height: 0; }
+    .hero-mascot { width: min(80%, 320px); }
+  }
+
+  /* ---- Sections ---- */
+  section { padding: 56px 0; }
+  .section-title { text-align: center; max-width: 640px; margin: 0 auto 36px; }
+  .section-title h2 { font-size: clamp(28px, 4vw, 42px); color: var(--navy); letter-spacing: -.03em; margin-bottom: 10px; }
+  .section-title p { color: var(--muted); font-size: 17px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 960px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+  .feature { background: #fff; border: 1px solid var(--line); border-radius: 24px; overflow: hidden; box-shadow: 0 14px 40px rgba(8,34,74,.07); }
+  .feature img { width: 100%; aspect-ratio: 4/3; object-fit: cover; }
+  .feature .body { padding: 20px 22px 24px; }
+  .feature h3 { color: var(--navy); font-size: 19px; margin-bottom: 6px; }
+  .feature p { color: var(--muted); font-size: 14.5px; }
+
+  .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 760px) { .steps-grid { grid-template-columns: 1fr; } }
+  .step { background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 26px; box-shadow: 0 14px 40px rgba(8,34,74,.07); }
+  .step .num { width: 40px; height: 40px; border-radius: 12px; background: var(--sky); color: var(--blue); font-weight: 800; font-size: 18px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+  .step h3 { color: var(--navy); font-size: 18px; margin-bottom: 6px; }
+  .step p { color: var(--muted); font-size: 14.5px; }
+
+  .showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: center; margin-bottom: 46px; }
+  .showcase:last-child { margin-bottom: 0; }
+  @media (max-width: 860px) { .showcase { grid-template-columns: 1fr; } .showcase.flip .txt { order: -1; } }
+  .showcase img { border-radius: 28px; box-shadow: 0 22px 60px rgba(8,34,74,.12); }
+  .showcase h3 { font-size: clamp(22px, 3vw, 30px); color: var(--navy); letter-spacing: -.02em; margin-bottom: 10px; }
+  .showcase p { color: var(--muted); font-size: 16px; }
+
+  .lang-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 760px; margin: 0 auto; }
+  .lang-chip { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 9px 18px; font-weight: 600; color: var(--navy); font-size: 14.5px; box-shadow: 0 8px 20px rgba(8,34,74,.05); }
+  .lang-chip.more { background: var(--sky); color: var(--blue); }
+
+  .pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 380px)); gap: 22px; justify-content: center; }
+  @media (max-width: 720px) { .pricing-grid { grid-template-columns: 1fr; } }
+  .price-card { background: #fff; border: 1px solid var(--line); border-radius: 28px; padding: 30px; box-shadow: 0 14px 40px rgba(8,34,74,.07); }
+  .price-card.featured { border: 2px solid var(--blue); position: relative; }
+  .price-card .plan { font-weight: 800; color: var(--navy); font-size: 18px; }
+  .price-card .price { font-size: 40px; font-weight: 800; color: var(--navy); margin: 10px 0 2px; letter-spacing: -.03em; }
+  .price-card .per { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+  .price-card ul { list-style: none; margin-bottom: 22px; }
+  .price-card li { padding: 7px 0 7px 28px; position: relative; color: var(--ink); font-size: 15px; }
+  .price-card li::before { content: "✓"; position: absolute; left: 0; color: var(--teal); font-weight: 800; }
+  .ribbon { position: absolute; top: -13px; right: 24px; background: var(--amber); color: #fff; font-weight: 800; font-size: 12px; padding: 5px 14px; border-radius: 999px; }
+
+  .cta-band { background: linear-gradient(120deg, var(--navy), #0d3170); border-radius: 32px; padding: clamp(28px, 5vw, 54px); display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; box-shadow: 0 24px 70px rgba(8,34,74,.25); }
+  @media (max-width: 720px) { .cta-band { grid-template-columns: 1fr; text-align: center; } .cta-band img { margin: 0 auto; } }
+  .cta-band h2 { color: #fff; font-size: clamp(24px, 4vw, 36px); letter-spacing: -.02em; margin-bottom: 8px; }
+  .cta-band p { color: #b9cdf3; margin-bottom: 20px; font-size: 16px; }
+  .cta-band img { width: 150px; }
+
+  footer { padding: 40px 0 50px; border-top: 1px solid var(--line); margin-top: 30px; }
+  .foot { display: flex; justify-content: space-between; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .foot .logo { height: 36px; }
+  .foot-links { display: flex; gap: 22px; }
+  .foot-links a { color: var(--muted); font-weight: 600; font-size: 14px; }
+  .foot-links a:hover { color: var(--blue); }
+  .foot .copy { color: var(--muted); font-size: 13.5px; }
 </style>
 </head>
 <body>
-<header>
-  <div class="logo">🎙️</div>
-  <div>
-    <h1>VoiceScribe</h1>
-    <p>Live transcription · online meetings · files &amp; links · speaker identification · AI summaries</p>
-  </div>
-</header>
 
 <div class="container">
-  <div class="card">
-    <div class="row">
-      <label class="chk" style="white-space:nowrap">Transcription language:</label>
-      <select id="aaiLang" style="width:280px">
-        <option value="auto">🌐 Auto-detect (recommended)</option>
-        <option value="en">English</option>
-        <option value="hi">Hindi — हिन्दी</option>
-        <option value="ta">Tamil — தமிழ்</option>
-        <option value="te">Telugu — తెలుగు</option>
-        <option value="bn">Bengali — বাংলা</option>
-        <option value="mr">Marathi — मराठी</option>
-        <option value="gu">Gujarati — ગુજરાતી</option>
-        <option value="kn">Kannada — ಕನ್ನಡ</option>
-        <option value="ml">Malayalam — മലയാളം</option>
-        <option value="pa">Punjabi — ਪੰਜਾਬੀ</option>
-        <option value="ur">Urdu — اردو</option>
-        <option value="as">Assamese — অসমীয়া</option>
-        <option value="ne">Nepali — नेपाली</option>
-        <option value="sd">Sindhi — سنڌي</option>
-      </select>
-      <span class="statusline">Auto-detect handles mixed Hindi–English (Hinglish) meetings well.</span>
+  <nav class="nav">
+    <a href="/"><img class="logo" src="assets/icons/stenoji-logo.svg" alt="Stenoji.com"></a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#languages">Languages</a>
+      <a href="#pricing">Pricing</a>
+      <a class="btn btn-primary" href="/app.html">Open app</a>
     </div>
-    <div class="row" style="margin-top:10px">
-      <label class="chk" style="white-space:nowrap">Number of speakers:</label>
-      <select id="numSpeakers" style="width:200px">
-        <option value="auto">Auto-detect</option>
-        <option value="2">2 speakers</option>
-        <option value="3">3 speakers</option>
-        <option value="4">4 speakers</option>
-        <option value="5">5 speakers</option>
-        <option value="6">6 speakers</option>
-        <option value="8">8 speakers</option>
-        <option value="10">10 speakers</option>
-      </select>
-      <span class="statusline">If you know how many people spoke, setting this greatly improves speaker separation.</span>
-    </div>
-  </div>
+  </nav>
+</div>
 
-  <div class="tabs">
-    <button class="tab active" data-panel="meeting">💻 Online Meeting</button>
-    <button class="tab" data-panel="live">🔴 Live Mic</button>
-    <button class="tab" data-panel="file">📁 File / Link</button>
-  </div>
-
-  <!-- ============ MEETING TAB ============ -->
-  <div class="panel active" id="panel-meeting">
-    <div class="card">
-      <h2>Transcribe an online meeting (Zoom / Meet / Teams)</h2>
-      <ol class="steps">
-        <li>Join your meeting in <b>another browser tab</b> (use the web version of Zoom/Meet/Teams).</li>
-        <li>Click <b>Start capture</b> below → in the picker choose <b>that tab</b> and enable <b>“Also share tab audio”</b>.</li>
-        <li>Live captions appear while the meeting runs. When you <b>Stop</b>, you get a full transcript with <b>speaker labels</b> and an <b>AI summary</b>.</li>
-      </ol>
-      <div class="row">
-        <button id="btnMeetStart">▶ Start capture</button>
-        <button id="btnMeetStop" class="danger" disabled>■ Stop &amp; transcribe</button>
-        <label class="chk"><input type="checkbox" id="chkMic" checked> Include my microphone</label>
-        <span class="statusline"><span class="status-dot" id="meetDot"></span><span id="meetStatus">Idle</span></span>
+<!-- ================= HERO ================= -->
+<div class="container hero">
+  <div class="hero-card">
+    <div>
+      <h1>Meetings to notes,<br>in <span class="hl">your language</span></h1>
+      <p class="sub">Stenoji transcribes meetings, voice notes, and audio or video files — with speaker names and AI summaries — in Hindi, Tamil, Telugu, Bengali and 10+ more languages. Hinglish? No problem.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/app.html">Start free — 60 min/month</a>
+        <a class="btn btn-light" href="#features">See what it does</a>
       </div>
-      <div id="meetError" class="error hidden"></div>
-      <div id="meetWarn" class="warn hidden"></div>
-    </div>
-
-    <div class="card hidden" id="captionCard">
-      <div class="row" style="justify-content:space-between">
-        <h2>Live captions</h2>
-        <span class="badge" id="meetTimer">0:00</span>
-      </div>
-      <div class="transcript-box" id="captionBox" style="margin-top:10px"><span class="interim">Waiting for speech…</span></div>
-    </div>
-
-    <div id="fileStatus-meet" class="statusline hidden" style="margin:0 4px 12px"></div>
-    <div class="progressbar hidden" id="fileProgress-meet"><div></div></div>
-
-    <div class="card summary-card hidden" id="summaryCard-meet">
-      <h2>📝 Meeting summary</h2>
-      <div id="summaryBody-meet" style="font-size:14px; line-height:1.6; margin-top:8px"></div>
-    </div>
-
-    <div class="card hidden" id="resultCard-meet">
-      <div class="row" style="justify-content:space-between">
-        <h2>Transcript <span class="badge" id="speakerCount-meet"></span></h2>
-        <span class="badge" id="duration-meet"></span>
-      </div>
-      <p class="hint" style="margin-top:6px">💡 Click a speaker chip to rename it (e.g. Speaker A → Rahul).</p>
-      <div class="transcript-box" id="transcript-meet"></div>
-      <div class="toolbar">
-        <button class="secondary" id="btnCopy-meet">Copy</button>
-        <button class="secondary" id="btnDownload-meet">Download .txt</button>
-        <button class="secondary" id="btnDownloadAudio-meet">Download recording</button>
-        <button class="secondary" id="btnPolish-meet">✨ Polish</button>
+      <div class="hero-stats">
+        <div class="stat"><div class="k">Languages</div><div class="v">14+</div></div>
+        <div class="stat"><div class="k">Speaker ID</div><div class="v">Automatic</div></div>
+        <div class="stat"><div class="k">Free plan</div><div class="v">₹0</div></div>
       </div>
     </div>
-
-    <div class="card hidden" id="polishCard-meet" style="border-left:3px solid var(--accent2)">
-      <h2>✨ Polished transcript</h2>
-      <div class="transcript-box" id="polishBox-meet" style="margin-top:10px"></div>
-      <div class="toolbar">
-        <button class="secondary" id="btnCopyPolish-meet">Copy</button>
-        <button class="secondary" id="btnDownloadPolish-meet">Download .txt</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============ LIVE MIC TAB ============ -->
-  <div class="panel" id="panel-live">
-    <div class="card">
-      <h2>Live microphone transcription</h2>
-      <p class="hint">Uses your browser's built-in speech engine. Works in <b>Chrome</b> and <b>Edge</b>. Single speaker only; for speaker identification use the Meeting or File tabs.</p>
-      <div class="row">
-        <select id="liveLang" style="width:240px">
-          <option value="en-US">English (US)</option>
-          <option value="en-IN">English (India)</option>
-          <option value="hi-IN">Hindi — हिन्दी</option>
-          <option value="ta-IN">Tamil — தமிழ்</option>
-          <option value="te-IN">Telugu — తెలుగు</option>
-          <option value="bn-IN">Bengali — বাংলা</option>
-          <option value="mr-IN">Marathi — मराठी</option>
-          <option value="gu-IN">Gujarati — ગુજરાતી</option>
-          <option value="kn-IN">Kannada — ಕನ್ನಡ</option>
-          <option value="ml-IN">Malayalam — മലയാളം</option>
-          <option value="pa-IN">Punjabi — ਪੰਜਾਬੀ</option>
-          <option value="ur-IN">Urdu — اردو</option>
-          <option value="en-GB">English (UK)</option>
-          <option value="es-ES">Spanish</option>
-          <option value="fr-FR">French</option>
-          <option value="de-DE">German</option>
-          <option value="ja-JP">Japanese</option>
-          <option value="zh-CN">Chinese (Mandarin)</option>
-        </select>
-        <button id="btnStart">▶ Start</button>
-        <button id="btnStop" class="danger" disabled>■ Stop</button>
-        <span class="statusline"><span class="status-dot" id="liveDot"></span><span id="liveStatus">Idle</span></span>
-      </div>
-      <div id="liveError" class="error hidden"></div>
-    </div>
-    <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <h2>Transcript</h2>
-        <span class="badge" id="liveWordCount">0 words</span>
-      </div>
-      <div class="transcript-box" id="liveTranscript" style="margin-top:10px"><span class="interim">Press Start and begin speaking…</span></div>
-      <div class="toolbar">
-        <button class="secondary" id="btnCopyLive">Copy</button>
-        <button class="secondary" id="btnDownloadLive">Download .txt</button>
-        <button class="secondary" id="btnClearLive">Clear</button>
-        <button class="secondary" id="btnPolishLive" title="Add punctuation & capitalization using AI">✨ Polish</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============ FILE / LINK TAB ============ -->
-  <div class="panel" id="panel-file">
-    <div class="card">
-      <h2>Upload audio or video</h2>
-      <p class="hint">MP3, WAV, M4A, MP4, and most common formats. Speaker identification and an AI summary are generated automatically.</p>
-      <div class="dropzone" id="dropzone">
-        <div style="font-size:26px; margin-bottom:8px">⬆️</div>
-        Drop a file here or <b>click to browse</b>
-      </div>
-      <input type="file" id="fileInput" class="hidden" accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.webm,.ogg,.flac,.aac">
-
-      <div class="divider">— or transcribe an online video/audio link —</div>
-      <div class="row">
-        <input type="text" id="urlInput" placeholder="https://example.com/recording.mp4 (direct media link)" style="flex:1; min-width:240px">
-        <button id="btnUrl">Transcribe link</button>
-      </div>
-      <p class="hint" style="margin-top:8px">Works with any <b>direct, publicly accessible</b> media URL (.mp3, .mp4, .wav, podcast enclosure links, etc.). YouTube page links won't work — YouTube doesn't expose the media file directly.</p>
-
-      <div id="fileStatus-file" class="statusline hidden" style="margin-top:12px"></div>
-      <div class="progressbar hidden" id="fileProgress-file"><div></div></div>
-      <div id="fileError" class="error hidden"></div>
-    </div>
-
-    <div class="card summary-card hidden" id="summaryCard-file">
-      <h2>📝 Summary</h2>
-      <div id="summaryBody-file" style="font-size:14px; line-height:1.6; margin-top:8px"></div>
-    </div>
-
-    <div class="card hidden" id="resultCard-file">
-      <div class="row" style="justify-content:space-between">
-        <h2>Transcript <span class="badge" id="speakerCount-file"></span></h2>
-        <span class="badge" id="duration-file"></span>
-      </div>
-      <p class="hint" style="margin-top:6px">💡 Click a speaker chip to rename it (e.g. Speaker A → Rahul).</p>
-      <div class="transcript-box" id="transcript-file"></div>
-      <div class="toolbar">
-        <button class="secondary" id="btnCopy-file">Copy</button>
-        <button class="secondary" id="btnDownload-file">Download .txt</button>
-        <button class="secondary" id="btnPolish-file">✨ Polish</button>
-      </div>
-    </div>
-
-    <div class="card hidden" id="polishCard-file" style="border-left:3px solid var(--accent2)">
-      <h2>✨ Polished transcript</h2>
-      <div class="transcript-box" id="polishBox-file" style="margin-top:10px"></div>
-      <div class="toolbar">
-        <button class="secondary" id="btnCopyPolish-file">Copy</button>
-        <button class="secondary" id="btnDownloadPolish-file">Download .txt</button>
-      </div>
+    <div class="hero-mascot-wrap">
+      <img class="hero-mascot" src="assets/mascot/stenoji-owl-mascot-transparent.png" alt="Stenoji owl mascot taking meeting notes">
+      <div class="float-chip chip-1"><img src="assets/icons/icon-microphone.svg" alt=""> Voice capture</div>
+      <div class="float-chip chip-2"><img src="assets/icons/icon-summary.svg" alt=""> Smart summary</div>
+      <div class="float-chip chip-3"><img src="assets/icons/icon-meeting.svg" alt=""> Meeting notes</div>
     </div>
   </div>
 </div>
 
-<script>
-"use strict";
+<!-- ================= FEATURES ================= -->
+<section id="features">
+  <div class="container">
+    <div class="section-title">
+      <h2>Everything a good steno does — powered by AI</h2>
+      <p>Record, upload or capture a meeting. Stenoji does the writing.</p>
+    </div>
+    <div class="grid">
+      <div class="feature">
+        <img src="assets/cards/card-voice-capture-800x600.png" alt="Live voice capture illustration" loading="lazy">
+        <div class="body"><h3>Live voice capture</h3><p>Speak into your mic and watch the words appear in real time. Great for dictation and quick notes.</p></div>
+      </div>
+      <div class="feature">
+        <img src="assets/cards/card-ai-assistant-800x600.png" alt="Online meeting transcription illustration" loading="lazy">
+        <div class="body"><h3>Online meeting transcription</h3><p>Capture Zoom, Google Meet or Teams meetings from a browser tab. Get the full transcript when you stop.</p></div>
+      </div>
+      <div class="feature">
+        <img src="assets/cards/card-audio-video-800x600.png" alt="Audio and video file transcription illustration" loading="lazy">
+        <div class="body"><h3>Audio &amp; video files</h3><p>Upload MP3, WAV, MP4 and more — or paste a direct media link. Up to 500 MB per file.</p></div>
+      </div>
+      <div class="feature">
+        <img src="assets/cards/card-speech-to-text-800x600.png" alt="Multilingual speech to text illustration" loading="lazy">
+        <div class="body"><h3>14+ Indian languages</h3><p>Hindi, Tamil, Telugu, Bengali, Marathi, Gujarati and more — with auto-detect that handles Hinglish naturally.</p></div>
+      </div>
+      <div class="feature">
+        <img src="assets/cards/card-action-items-800x600.png" alt="Speaker identification illustration" loading="lazy">
+        <div class="body"><h3>Speaker identification</h3><p>Stenoji labels who said what automatically. Click a name to rename Speaker A to Priya.</p></div>
+      </div>
+      <div class="feature">
+        <img src="assets/cards/card-smart-summary-800x600.png" alt="AI summary illustration" loading="lazy">
+        <div class="body"><h3>AI summaries &amp; Polish</h3><p>Get key points as bullets, and one-click Polish that fixes punctuation without changing your words.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-function $(id) { return document.getElementById(id); }
+<!-- ================= HOW IT WORKS ================= -->
+<section id="how" style="background:#fff; border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+  <div class="container">
+    <div class="section-title">
+      <h2>How it works</h2>
+      <p>Three steps. No installation, works in your browser.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step"><div class="num">1</div><h3>Record or upload</h3><p>Use your mic, capture a meeting tab, or drop in an audio/video file.</p></div>
+      <div class="step"><div class="num">2</div><h3>Stenoji transcribes</h3><p>Accurate speech-to-text with automatic language detection and speaker labels.</p></div>
+      <div class="step"><div class="num">3</div><h3>Summarise &amp; share</h3><p>AI summary, polished punctuation, and one-click copy or .txt download.</p></div>
+    </div>
+  </div>
+</section>
 
-/* ---------------- Tabs ---------------- */
-document.querySelectorAll(".tab").forEach(function (tab) {
-  tab.addEventListener("click", function () {
-    document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
-    document.querySelectorAll(".panel").forEach(function (p) { p.classList.remove("active"); });
-    tab.classList.add("active");
-    document.getElementById("panel-" + tab.dataset.panel).classList.add("active");
-  });
-});
+<!-- ================= SHOWCASES ================= -->
+<section>
+  <div class="container">
+    <div class="showcase">
+      <img src="assets/sections/section-meeting-transcription-1200x700.png" alt="Meeting transcription with speaker labels" loading="lazy">
+      <div class="txt">
+        <h3>Never take meeting minutes again</h3>
+        <p>Join your meeting, let Stenoji listen, and get a complete transcript with every speaker identified — plus a summary you can paste straight into an email.</p>
+      </div>
+    </div>
+    <div class="showcase flip">
+      <div class="txt">
+        <h3>Summaries that respect your time</h3>
+        <p>A one-hour discussion becomes a handful of clear bullet points. Read in one minute what took sixty to say.</p>
+      </div>
+      <img src="assets/sections/section-smart-summary-1200x700.png" alt="Smart summary example" loading="lazy">
+    </div>
+    <div class="showcase">
+      <img src="assets/sections/section-voice-to-notes-1200x700.png" alt="Voice notes converted to text" loading="lazy">
+      <div class="txt">
+        <h3>Think out loud, get clean notes</h3>
+        <p>Dictate ideas on the go. Stenoji's Polish button restores punctuation and capitalisation without changing a single word you said.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-/* ---------------- Helpers ---------------- */
-function downloadBlob(filename, blob) {
-  var a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
-}
-function downloadText(filename, text) {
-  downloadBlob(filename, new Blob([text], { type: "text/plain;charset=utf-8" }));
-}
-function copyText(text, btn) {
-  navigator.clipboard.writeText(text).then(function () {
-    var old = btn.textContent;
-    btn.textContent = "✓ Copied";
-    setTimeout(function () { btn.textContent = old; }, 1500);
-  });
-}
-function msToClock(ms) {
-  var s = Math.floor(ms / 1000);
-  var m = Math.floor(s / 60);
-  var h = Math.floor(m / 60);
-  s = s % 60; m = m % 60;
-  var mm = (m < 10 ? "0" : "") + m;
-  var ss = (s < 10 ? "0" : "") + s;
-  return h > 0 ? h + ":" + mm + ":" + ss : m + ":" + ss;
-}
-function escapeHtml(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
+<!-- ================= LANGUAGES ================= -->
+<section id="languages" style="background:#fff; border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+  <div class="container">
+    <div class="section-title">
+      <h2>Built for how India actually speaks</h2>
+      <p>Auto-detect follows the conversation even when it switches between languages mid-sentence.</p>
+    </div>
+    <div class="lang-chips">
+      <span class="lang-chip">हिन्दी Hindi</span>
+      <span class="lang-chip">தமிழ் Tamil</span>
+      <span class="lang-chip">తెలుగు Telugu</span>
+      <span class="lang-chip">বাংলা Bengali</span>
+      <span class="lang-chip">मराठी Marathi</span>
+      <span class="lang-chip">ગુજરાતી Gujarati</span>
+      <span class="lang-chip">ಕನ್ನಡ Kannada</span>
+      <span class="lang-chip">മലയാളം Malayalam</span>
+      <span class="lang-chip">ਪੰਜਾਬੀ Punjabi</span>
+      <span class="lang-chip">اردو Urdu</span>
+      <span class="lang-chip">অসমীয়া Assamese</span>
+      <span class="lang-chip">नेपाली Nepali</span>
+      <span class="lang-chip">سنڌي Sindhi</span>
+      <span class="lang-chip">English</span>
+      <span class="lang-chip more">+ Hinglish auto-detect</span>
+    </div>
+  </div>
+</section>
 
-/* ================= LIVE MIC (Web Speech API) ================= */
-var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-var recognition = null;
-var userStopped = false;
-var finalText = "";
-var liveBox = $("liveTranscript");
-var liveErr = $("liveError");
+<!-- ================= PRICING ================= -->
+<section id="pricing">
+  <div class="container">
+    <div class="section-title">
+      <h2>Simple pricing</h2>
+      <p>Start free. Upgrade when you need more minutes.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="plan">Free</div>
+        <div class="price">₹0</div>
+        <div class="per">forever</div>
+        <ul>
+          <li>60 transcription minutes / month</li>
+          <li>All 14+ languages &amp; auto-detect</li>
+          <li>Speaker identification</li>
+          <li>AI summaries &amp; Polish</li>
+          <li>Meeting, mic and file transcription</li>
+        </ul>
+        <a class="btn btn-primary" href="/app.html" style="width:100%">Start free</a>
+      </div>
+      <div class="price-card featured">
+        <div class="ribbon">COMING SOON</div>
+        <div class="plan">Pro</div>
+        <div class="price">₹—</div>
+        <div class="per">per month</div>
+        <ul>
+          <li>Many more minutes every month</li>
+          <li>Priority transcription</li>
+          <li>Transcript history &amp; search</li>
+          <li>Everything in Free</li>
+        </ul>
+        <a class="btn btn-light" href="/app.html" style="width:100%">Join the free plan first</a>
+      </div>
+    </div>
+  </div>
+</section>
 
-function updateLiveBox(interim) {
-  var html = "";
-  if (finalText) html += escapeHtml(finalText);
-  if (interim) html += '<span class="interim">' + escapeHtml(interim) + "</span>";
-  if (!html) html = '<span class="interim">Press Start and begin speaking…</span>';
-  liveBox.innerHTML = html;
-  liveBox.scrollTop = liveBox.scrollHeight;
-  var words = finalText.trim() ? finalText.trim().split(/\s+/).length : 0;
-  $("liveWordCount").textContent = words + " words";
-}
-function setLiveStatus(text, live) {
-  $("liveStatus").textContent = text;
-  $("liveDot").classList.toggle("live", !!live);
-}
+<!-- ================= CTA ================= -->
+<section>
+  <div class="container">
+    <div class="cta-band">
+      <div>
+        <h2>Your meetings, remembered perfectly.</h2>
+        <p>Sign in with Google and get 60 free minutes of transcription every month. No credit card needed.</p>
+        <a class="btn btn-primary" href="/app.html" style="background:var(--amber); box-shadow:0 12px 28px rgba(246,169,53,.35)">Open Stenoji free</a>
+      </div>
+      <img src="assets/mascot/stenoji-owl-head-transparent.png" alt="Stenoji owl">
+    </div>
+  </div>
+</section>
 
-$("btnStart").addEventListener("click", function () {
-  liveErr.classList.add("hidden");
-  if (!SR) {
-    liveErr.textContent = "Your browser doesn't support the Web Speech API. Please use Chrome or Edge.";
-    liveErr.classList.remove("hidden");
-    return;
-  }
-  userStopped = false;
-  recognition = new SR();
-  recognition.lang = $("liveLang").value;
-  recognition.continuous = true;
-  recognition.interimResults = true;
+<footer>
+  <div class="container foot">
+    <img class="logo" src="assets/icons/stenoji-logo.svg" alt="Stenoji.com">
+    <div class="foot-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="/app.html">Open app</a>
+    </div>
+    <div class="copy">© 2026 Stenoji · Made in India 🇮🇳</div>
+  </div>
+</footer>
 
-  recognition.onstart = function () {
-    setLiveStatus("Listening…", true);
-    $("btnStart").disabled = true;
-    $("btnStop").disabled = false;
-  };
-  recognition.onresult = function (event) {
-    var interim = "";
-    for (var i = event.resultIndex; i < event.results.length; i++) {
-      var res = event.results[i];
-      if (res.isFinal) {
-        var t = res[0].transcript.trim();
-        if (t) finalText += (finalText ? " " : "") + t;
-      } else {
-        interim += res[0].transcript;
-      }
-    }
-    updateLiveBox(interim);
-  };
-  recognition.onerror = function (event) {
-    if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-      liveErr.textContent = "Microphone access denied. Allow mic access in your browser settings and try again.";
-      liveErr.classList.remove("hidden");
-      userStopped = true;
-    } else if (event.error === "network") {
-      liveErr.textContent = "Network error — the browser speech service needs an internet connection.";
-      liveErr.classList.remove("hidden");
-    }
-  };
-  recognition.onend = function () {
-    if (!userStopped) {
-      try { recognition.start(); return; } catch (e) {}
-    }
-    setLiveStatus("Idle", false);
-    $("btnStart").disabled = false;
-    $("btnStop").disabled = true;
-  };
-  try { recognition.start(); } catch (e) {
-    liveErr.textContent = "Could not start recognition: " + e.message;
-    liveErr.classList.remove("hidden");
-  }
-});
-$("btnStop").addEventListener("click", function () {
-  userStopped = true;
-  if (recognition) recognition.stop();
-});
-$("btnClearLive").addEventListener("click", function () { finalText = ""; updateLiveBox(""); });
-$("btnCopyLive").addEventListener("click", function () { copyText(finalText, $("btnCopyLive")); });
-$("btnDownloadLive").addEventListener("click", function () { downloadText("live-transcript.txt", finalText); });
-
-/* ================= SHARED: transcription via backend + rendering ================= */
-var SPEAKER_COLORS = ["#4f7cff", "#2ecc8f", "#ff8c42", "#c65cff", "#ffc857", "#ff5c6c", "#3ec9d6", "#9dd64f"];
-var speakerNames = {};
-var lastTranscripts = {};
-var plainTexts = {};
-
-function speakerLabel(code) {
-  return speakerNames[code] || ("Speaker " + code);
-}
-function setStatus(panel, text) {
-  var el = $("fileStatus-" + panel);
-  el.textContent = text;
-  el.classList.toggle("hidden", !text);
-}
-function setProgress(panel, on) {
-  $("fileProgress-" + panel).classList.toggle("hidden", !on);
-}
-
-function buildRequest(audioUrl) {
-  var lang = $("aaiLang").value;
-  var req = {
-    audio_url: audioUrl,
-    speech_models: ["universal-3-pro", "universal-2"],
-    speaker_labels: true,
-    summarization: true,
-    summary_model: "informative",
-    summary_type: "bullets",
-    language_detection: true
-  };
-  var n = $("numSpeakers").value;
-  if (n !== "auto") req.speakers_expected = parseInt(n, 10);
-  if (lang !== "auto") {
-    req.language_detection_options = {
-      expected_languages: lang === "en" ? ["en"] : [lang, "en"],
-      fallback_language: lang
-    };
-  }
-  return req;
-}
-
-async function runTranscriptJob(panel, audioUrl, filename, onError) {
-  try {
-    setStatus(panel, "Transcribing with speaker identification… usually ~15–30% of the audio's duration.");
-    var trRes = await fetch("/api/transcript", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(buildRequest(audioUrl))
-    });
-    var job = await trRes.json();
-    if (!trRes.ok) throw new Error(job.error || "Transcription request failed (HTTP " + trRes.status + ").");
-
-    var transcript = null;
-    while (true) {
-      await new Promise(function (r) { setTimeout(r, 3000); });
-      var pollRes = await fetch("/api/transcript/" + job.id);
-      transcript = await pollRes.json();
-      if (transcript.status === "completed") break;
-      if (transcript.status === "error") throw new Error(transcript.error || "Transcription failed.");
-      setStatus(panel, "Transcribing… (status: " + transcript.status + ")");
-    }
-
-    lastTranscripts[panel] = { t: transcript, filename: filename };
-    renderTranscript(panel);
-    setStatus(panel, "");
-    setProgress(panel, false);
-  } catch (err) {
-    setStatus(panel, "");
-    setProgress(panel, false);
-    onError(err.message || String(err));
-  }
-}
-
-async function transcribeBlob(panel, blob, filename, onError) {
-  if (blob.size > 500 * 1024 * 1024) { onError("File is too large (max ~500 MB)."); return; }
-  if (blob.size < 1000) { onError("The recording/file is empty — no audio was captured."); return; }
-  setProgress(panel, true);
-  try {
-    setStatus(panel, "Uploading (" + (blob.size / 1024 / 1024).toFixed(1) + " MB)…");
-    var upRes = await fetch("/api/upload", { method: "POST", body: blob });
-    var upload = await upRes.json();
-    if (!upRes.ok) throw new Error(upload.error || "Upload failed (HTTP " + upRes.status + ").");
-    await runTranscriptJob(panel, upload.upload_url, filename, onError);
-  } catch (err) {
-    setStatus(panel, "");
-    setProgress(panel, false);
-    onError(err.message || String(err));
-  }
-}
-
-function renderTranscript(panel) {
-  var data = lastTranscripts[panel];
-  if (!data) return;
-  var t = data.t, filename = data.filename;
-  var box = $("transcript-" + panel);
-  box.innerHTML = "";
-  var plainLines = [];
-  var speakerOrder = {};
-
-  if (t.utterances && t.utterances.length) {
-    t.utterances.forEach(function (u) {
-      if (!(u.speaker in speakerOrder)) speakerOrder[u.speaker] = Object.keys(speakerOrder).length;
-      var color = SPEAKER_COLORS[speakerOrder[u.speaker] % SPEAKER_COLORS.length];
-      var div = document.createElement("div");
-      div.className = "utterance";
-      var chip = document.createElement("span");
-      chip.className = "speaker-chip";
-      chip.style.background = color;
-      chip.textContent = speakerLabel(u.speaker);
-      chip.title = "Click to rename this speaker";
-      chip.addEventListener("click", function () { renameSpeaker(u.speaker); });
-      var right = document.createElement("div");
-      right.className = "text";
-      var ts = document.createElement("div");
-      ts.className = "ts";
-      ts.textContent = msToClock(u.start);
-      var body = document.createElement("div");
-      body.textContent = u.text;
-      right.appendChild(ts);
-      right.appendChild(body);
-      div.appendChild(chip);
-      div.appendChild(right);
-      box.appendChild(div);
-      plainLines.push("[" + msToClock(u.start) + "] " + speakerLabel(u.speaker) + ": " + u.text);
-    });
-  } else {
-    box.textContent = t.text || "(no speech detected)";
-    plainLines.push(t.text || "");
-  }
-
-  var plain = plainLines.join("\n\n");
-  var nSpeakers = Object.keys(speakerOrder).length;
-  var LANG_NAMES = { en: "English", en_us: "English", en_uk: "English", en_au: "English", hi: "Hindi", ta: "Tamil", te: "Telugu", bn: "Bengali", mr: "Marathi", gu: "Gujarati", kn: "Kannada", ml: "Malayalam", pa: "Punjabi", ur: "Urdu", as: "Assamese", ne: "Nepali", sd: "Sindhi" };
-  var langBadge = t.language_code ? " · " + (LANG_NAMES[t.language_code] || t.language_code.toUpperCase()) : "";
-  $("speakerCount-" + panel).textContent = (nSpeakers ? nSpeakers + " speaker" + (nSpeakers > 1 ? "s" : "") : "") + langBadge;
-  $("duration-" + panel).textContent = t.audio_duration ? "Duration: " + msToClock(t.audio_duration * 1000) : "";
-  box.parentNode.querySelectorAll(".lang-note").forEach(function (n) { n.remove(); });
-  if (!nSpeakers && t.text) {
-    var note = document.createElement("div");
-    note.className = "warn lang-note";
-    note.style.marginBottom = "8px";
-    note.textContent = "Speaker identification isn't available for this language yet — showing plain transcript.";
-    box.parentNode.insertBefore(note, box);
-  }
-  $("resultCard-" + panel).classList.remove("hidden");
-
-  if (t.summary) {
-    var sb = $("summaryBody-" + panel);
-    sb.innerHTML = "";
-    t.summary.split("\n").forEach(function (line) {
-      line = line.trim();
-      if (!line) return;
-      var p = document.createElement("div");
-      p.style.marginBottom = "6px";
-      p.textContent = line.replace(/^[-•]\s*/, "• ");
-      sb.appendChild(p);
-    });
-    $("summaryCard-" + panel).classList.remove("hidden");
-    plain = "SUMMARY\n" + t.summary + "\n\n---\n\nTRANSCRIPT\n\n" + plain;
-  }
-  plainTexts[panel] = plain;
-
-  $("btnDownload-" + panel).onclick = function () {
-    downloadText((filename || "transcript").replace(/\.[^.]+$/, "") + "-transcript.txt", plainTexts[panel]);
-  };
-  $("btnCopy-" + panel).onclick = function () { copyText(plainTexts[panel], $("btnCopy-" + panel)); };
-}
-
-function renameSpeaker(code) {
-  var current = speakerNames[code] || "";
-  var name = prompt('Name for "Speaker ' + code + '":', current);
-  if (name === null) return;
-  name = name.trim();
-  if (name) speakerNames[code] = name;
-  else delete speakerNames[code];
-  Object.keys(lastTranscripts).forEach(function (p) { renderTranscript(p); });
-}
-
-/* ================= POLISH (punctuation restore via LeMUR) ================= */
-async function polishText(text) {
-  var r = await fetch("/api/polish", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ text: text })
-  });
-  var d = await r.json();
-  if (!r.ok || d.error) throw new Error(d.error || "Polish failed (HTTP " + r.status + ")");
-  return d.response || "";
-}
-
-function wirePolish(panel) {
-  $("btnPolish-" + panel).addEventListener("click", async function () {
-    if (!plainTexts[panel]) return;
-    var btn = this, orig = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = "Polishing…";
-    try {
-      var out = await polishText(plainTexts[panel]);
-      $("polishBox-" + panel).textContent = out;
-      $("polishCard-" + panel).classList.remove("hidden");
-      $("btnCopyPolish-" + panel).onclick = function () { copyText(out, this); };
-      $("btnDownloadPolish-" + panel).onclick = function () { downloadText("polished-transcript.txt", out); };
-    } catch (e) {
-      alert("Polish failed: " + e.message);
-    }
-    btn.disabled = false;
-    btn.textContent = orig;
-  });
-}
-wirePolish("meet");
-wirePolish("file");
-
-$("btnPolishLive").addEventListener("click", async function () {
-  if (!finalText.trim()) return;
-  var btn = this, orig = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "Polishing…";
-  liveErr.classList.add("hidden");
-  try {
-    finalText = await polishText(finalText);
-    updateLiveBox("");
-  } catch (e) {
-    liveErr.textContent = "Polish failed: " + e.message;
-    liveErr.classList.remove("hidden");
-  }
-  btn.disabled = false;
-  btn.textContent = orig;
-});
-
-/* ================= FILE UPLOAD + URL ================= */
-var dropzone = $("dropzone");
-var fileInput = $("fileInput");
-dropzone.addEventListener("click", function () { fileInput.click(); });
-dropzone.addEventListener("dragover", function (e) { e.preventDefault(); dropzone.classList.add("dragover"); });
-dropzone.addEventListener("dragleave", function () { dropzone.classList.remove("dragover"); });
-dropzone.addEventListener("drop", function (e) {
-  e.preventDefault();
-  dropzone.classList.remove("dragover");
-  if (e.dataTransfer.files.length) startFileJob(e.dataTransfer.files[0]);
-});
-fileInput.addEventListener("change", function () {
-  if (fileInput.files.length) startFileJob(fileInput.files[0]);
-});
-function fileTabError(msg) {
-  $("fileError").textContent = msg;
-  $("fileError").classList.remove("hidden");
-}
-function resetFileTab() {
-  $("fileError").classList.add("hidden");
-  $("resultCard-file").classList.add("hidden");
-  $("summaryCard-file").classList.add("hidden");
-}
-function startFileJob(file) {
-  resetFileTab();
-  transcribeBlob("file", file, file.name, fileTabError);
-}
-$("btnUrl").addEventListener("click", function () {
-  var url = $("urlInput").value.trim();
-  if (!/^https?:\/\/.+/.test(url)) { fileTabError("Please enter a valid http(s) URL to a media file."); return; }
-  if (/(youtube\.com|youtu\.be)\//.test(url)) {
-    fileTabError("YouTube page links can't be transcribed directly — YouTube doesn't expose the media file. Use a direct media URL, or download the video and upload the file instead.");
-    return;
-  }
-  resetFileTab();
-  setProgress("file", true);
-  var name = url.split("/").pop().split("?")[0] || "online-media";
-  runTranscriptJob("file", url, name, fileTabError);
-});
-
-/* ================= ONLINE MEETING CAPTURE ================= */
-var meet = {
-  displayStream: null, micStream: null, audioCtx: null, mixBus: null,
-  recorder: null, chunks: [], ws: null, proc: null,
-  timerInterval: null, startedAt: 0, recordingBlob: null, active: false
-};
-var captionFinal = "";
-
-function setMeetStatus(text, live) {
-  $("meetStatus").textContent = text;
-  $("meetDot").classList.toggle("live", !!live);
-}
-function meetError(msg) {
-  $("meetError").textContent = msg;
-  $("meetError").classList.remove("hidden");
-}
-function meetWarn(msg) {
-  $("meetWarn").textContent = msg;
-  $("meetWarn").classList.toggle("hidden", !msg);
-}
-function updateCaptions(partial) {
-  var box = $("captionBox");
-  var html = "";
-  if (captionFinal) html += '<span class="caption-line">' + escapeHtml(captionFinal) + "</span>";
-  if (partial) html += '<span class="interim"> ' + escapeHtml(partial) + "</span>";
-  if (!html) html = '<span class="interim">Waiting for speech…</span>';
-  box.innerHTML = html;
-  box.scrollTop = box.scrollHeight;
-}
-
-$("btnMeetStart").addEventListener("click", startMeeting);
-$("btnMeetStop").addEventListener("click", stopMeeting);
-
-async function startMeeting() {
-  $("meetError").classList.add("hidden");
-  meetWarn("");
-  $("resultCard-meet").classList.add("hidden");
-  $("summaryCard-meet").classList.add("hidden");
-  captionFinal = "";
-
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-    meetError("Screen/tab capture isn't supported in this browser. Use Chrome or Edge.");
-    return;
-  }
-
-  try {
-    meet.displayStream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
-      audio: { echoCancellation: false, noiseSuppression: false }
-    });
-  } catch (e) {
-    meetError("Capture was cancelled or blocked.");
-    return;
-  }
-
-  if (!meet.displayStream.getAudioTracks().length) {
-    meet.displayStream.getTracks().forEach(function (t) { t.stop(); });
-    meetError('No audio captured. In the picker, select the meeting TAB (not window/screen) and turn ON "Also share tab audio", then try again.');
-    return;
-  }
-
-  meet.micStream = null;
-  if ($("chkMic").checked) {
-    try {
-      meet.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (e) {
-      meetWarn("Microphone unavailable — capturing meeting audio only (your own voice may not be transcribed).");
-    }
-  }
-
-  meet.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  meet.mixBus = meet.audioCtx.createGain();
-  var tabSrc = meet.audioCtx.createMediaStreamSource(
-    new MediaStream([meet.displayStream.getAudioTracks()[0]])
-  );
-  tabSrc.connect(meet.mixBus);
-  if (meet.micStream) {
-    meet.audioCtx.createMediaStreamSource(meet.micStream).connect(meet.mixBus);
-  }
-  var dest = meet.audioCtx.createMediaStreamDestination();
-  meet.mixBus.connect(dest);
-
-  meet.chunks = [];
-  var mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
-  try {
-    meet.recorder = new MediaRecorder(dest.stream, { mimeType: mime });
-  } catch (e) {
-    meet.recorder = new MediaRecorder(dest.stream);
-  }
-  meet.recorder.ondataavailable = function (e) { if (e.data.size) meet.chunks.push(e.data); };
-  meet.recorder.onstop = onRecordingReady;
-  meet.recorder.start(1000);
-
-  var vTrack = meet.displayStream.getVideoTracks()[0];
-  if (vTrack) vTrack.onended = function () { if (meet.active) stopMeeting(); };
-
-  meet.active = true;
-  meet.startedAt = Date.now();
-  $("captionCard").classList.remove("hidden");
-  updateCaptions("");
-  $("btnMeetStart").disabled = true;
-  $("btnMeetStop").disabled = false;
-  setMeetStatus("Recording meeting…", true);
-  meet.timerInterval = setInterval(function () {
-    $("meetTimer").textContent = msToClock(Date.now() - meet.startedAt);
-  }, 1000);
-
-  startLiveCaptions();
-}
-
-async function startLiveCaptions() {
-  try {
-    var r = await fetch("/api/streaming-token");
-    if (!r.ok) throw new Error("token HTTP " + r.status);
-    var tok = await r.json();
-    if (!tok.token) throw new Error("no token");
-    var rate = Math.round(meet.audioCtx.sampleRate);
-    var ws = new WebSocket("wss://streaming.assemblyai.com/v3/ws?sample_rate=" + rate + "&token=" + encodeURIComponent(tok.token));
-    ws.binaryType = "arraybuffer";
-    meet.ws = ws;
-
-    ws.onopen = function () {
-      meet.proc = meet.audioCtx.createScriptProcessor(4096, 1, 1);
-      meet.mixBus.connect(meet.proc);
-      var mute = meet.audioCtx.createGain();
-      mute.gain.value = 0;
-      meet.proc.connect(mute);
-      mute.connect(meet.audioCtx.destination);
-      meet.proc.onaudioprocess = function (e) {
-        if (ws.readyState !== 1) return;
-        var f32 = e.inputBuffer.getChannelData(0);
-        var i16 = new Int16Array(f32.length);
-        for (var i = 0; i < f32.length; i++) {
-          var s = Math.max(-1, Math.min(1, f32[i]));
-          i16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-        }
-        ws.send(i16.buffer);
-      };
-    };
-    ws.onmessage = function (ev) {
-      try {
-        var m = JSON.parse(ev.data);
-        if (m.type === "Turn") {
-          if (m.end_of_turn && m.transcript) {
-            captionFinal += (captionFinal ? " " : "") + m.transcript;
-            updateCaptions("");
-          } else {
-            updateCaptions(m.transcript || "");
-          }
-        }
-      } catch (e) {}
-    };
-    ws.onerror = function () { captionsUnavailable(); };
-    ws.onclose = function (ev) { if (meet.active && ev.code !== 1000) captionsUnavailable(); };
-  } catch (e) {
-    captionsUnavailable();
-  }
-}
-
-function captionsUnavailable() {
-  if (!meet.active) return;
-  meetWarn("Live captions unavailable (English-only, and streaming may require a funded AssemblyAI account). Recording continues — you'll get the full transcript, speakers and summary when you stop.");
-  if (meet.proc) { try { meet.proc.disconnect(); } catch (e) {} meet.proc = null; }
-}
-
-function stopMeeting() {
-  if (!meet.active) return;
-  meet.active = false;
-  clearInterval(meet.timerInterval);
-  setMeetStatus("Processing…", false);
-  $("btnMeetStop").disabled = true;
-
-  if (meet.ws) { try { meet.ws.close(1000); } catch (e) {} meet.ws = null; }
-  if (meet.proc) { try { meet.proc.disconnect(); } catch (e) {} meet.proc = null; }
-  if (meet.recorder && meet.recorder.state !== "inactive") {
-    meet.recorder.stop();
-  }
-  if (meet.displayStream) meet.displayStream.getTracks().forEach(function (t) { t.stop(); });
-  if (meet.micStream) meet.micStream.getTracks().forEach(function (t) { t.stop(); });
-}
-
-function onRecordingReady() {
-  if (meet.audioCtx) { try { meet.audioCtx.close(); } catch (e) {} meet.audioCtx = null; }
-  meet.recordingBlob = new Blob(meet.chunks, { type: "audio/webm" });
-  $("btnDownloadAudio-meet").onclick = function () {
-    downloadBlob("meeting-recording.webm", meet.recordingBlob);
-  };
-  $("btnMeetStart").disabled = false;
-  setMeetStatus("Idle", false);
-
-  transcribeBlob("meet", meet.recordingBlob, "meeting.webm", function (msg) {
-    meetError(msg + ' — you can still download the recording and use the File tab later.');
-    $("resultCard-meet").classList.remove("hidden");
-    $("transcript-meet").innerHTML = '<span class="interim">Transcription failed — recording is available via "Download recording".</span>';
-  });
-}
-</script>
 </body>
 </html>
