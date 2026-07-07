@@ -21,7 +21,9 @@ const PORT = process.env.PORT || 3000;
 const AAI_KEY = process.env.ASSEMBLYAI_API_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
+// Normalize the Supabase URL: trim spaces/slashes and ensure it starts with https://
+let SUPABASE_URL = (process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "").replace(/^\/+/, "");
+if (SUPABASE_URL && !/^https?:\/\//i.test(SUPABASE_URL)) SUPABASE_URL = "https://" + SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const FREE_MINUTES = parseInt(process.env.FREE_MINUTES || "60", 10);
