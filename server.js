@@ -16,6 +16,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const PORT = process.env.PORT || 3000;
 const AAI_KEY = process.env.ASSEMBLYAI_API_KEY;
@@ -27,6 +28,12 @@ if (SUPABASE_URL && !/^https?:\/\//i.test(SUPABASE_URL)) SUPABASE_URL = "https:/
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const FREE_MINUTES = parseInt(process.env.FREE_MINUTES || "60", 10);
+// Pro pass (Razorpay) — payments are disabled until both keys are set.
+const RZP_KEY_ID = process.env.RAZORPAY_KEY_ID || "";
+const RZP_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
+const PRO_MINUTES = parseInt(process.env.PRO_MINUTES || "1200", 10);
+const PRO_PRICE_PAISE = parseInt(process.env.PRO_PRICE_PAISE || "49900", 10); // ₹499
+const PRO_DAYS = parseInt(process.env.PRO_DAYS || "30", 10);
 const AAI = "https://api.assemblyai.com/v2";
 
 const PUBLIC_DIR = fs.existsSync(path.join(__dirname, "public"))
@@ -160,14 +167,32 @@ async function usedSecondsThisMonth(userId) {
   return rows.reduce((sum, row) => sum + (row.seconds || 0), 0);
 }
 
+// Is this user on an active Pro pass?
+async function proStatus(userId) {
+  try {
+    const r = await sbRest(
+      "pro_passes?select=valid_until&user_id=eq." + userId +
+      "&valid_until=gte." + encodeURIComponent(new Date().toISOString()) +
+      "&order=valid_until.desc&limit=1"
+    );
+    if (!r.ok) return { isPro: false, proUntil: null };
+    const rows = await r.json();
+    if (!rows.length) return { isPro: false, proUntil: null };
+    return { isPro: true, proUntil: rows[0].valid_until };
+  } catch (e) {
+    return { isPro: false, proUntil: null };
+  }
+}
+
 // Returns null if the user still has minutes, otherwise a friendly error string.
 async function limitExceededMessage(userId) {
-  const used = await usedSecondsThisMonth(userId);
-  if (used < FREE_MINUTES * 60) return null;
-  return (
-    "You've used all " + FREE_MINUTES + " free minutes for this month. " +
-    "Your minutes reset on the 1st. Paid plans are coming soon!"
-  );
+  const [used, plan] = await Promise.all([usedSecondsThisMonth(userId), proStatus(userId)]);
+  const limitMin = plan.isPro ? PRO_MINUTES : FREE_MINUTES;
+  if (used < limitMin * 60) return null;
+  return plan.isPro
+    ? "You've used all " + PRO_MINUTES + " Pro minutes for this month. Minutes reset on the 1st."
+    : "You've used all " + FREE_MINUTES + " free minutes for this month. " +
+      "Your minutes reset on the 1st — or upgrade to Pro for " + PRO_MINUTES + " minutes/month.";
 }
 
 async function registerTranscript(userId, transcriptId) {
@@ -212,6 +237,10 @@ const server = http.createServer(async (req, res) => {
         supabaseUrl: SUPABASE_URL,
         supabaseAnonKey: SUPABASE_ANON_KEY,
         freeMinutes: FREE_MINUTES,
+        paymentsEnabled: !!(RZP_KEY_ID && RZP_KEY_SECRET),
+        proPriceRupees: Math.round(PRO_PRICE_PAISE / 100),
+        proMinutes: PRO_MINUTES,
+        proDays: PRO_DAYS,
       });
     }
 
@@ -223,12 +252,93 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (p === "/api/me" && req.method === "GET") {
-      const used = await usedSecondsThisMonth(user.id);
+      const [used, plan] = await Promise.all([usedSecondsThisMonth(user.id), proStatus(user.id)]);
       return sendJson(res, 200, {
         email: user.email,
         usedSeconds: used,
-        limitSeconds: FREE_MINUTES * 60,
+        limitSeconds: (plan.isPro ? PRO_MINUTES : FREE_MINUTES) * 60,
+        isPro: plan.isPro,
+        proUntil: plan.proUntil,
       });
+    }
+
+    // ---------- Payments: 30-day Pro pass (Razorpay) ----------
+    if (p === "/api/create-order" && req.method === "POST") {
+      if (!RZP_KEY_ID || !RZP_KEY_SECRET) {
+        return sendJson(res, 501, { error: "Payments aren't available yet — coming very soon!" });
+      }
+      const basic = Buffer.from(RZP_KEY_ID + ":" + RZP_KEY_SECRET).toString("base64");
+      const r = await fetch("https://api.razorpay.com/v1/orders", {
+        method: "POST",
+        headers: { authorization: "Basic " + basic, "content-type": "application/json" },
+        body: JSON.stringify({
+          amount: PRO_PRICE_PAISE,
+          currency: "INR",
+          receipt: "pro-" + Date.now(),
+          notes: { user_id: user.id, email: user.email, product: "pro-pass-" + PRO_DAYS + "d" },
+        }),
+      });
+      let data;
+      try { data = await r.json(); } catch (e) { data = {}; }
+      if (!r.ok || !data.id) {
+        const msg = (data.error && data.error.description) || "Could not create the payment order. Please try again.";
+        return sendJson(res, 502, { error: msg });
+      }
+      await sbRest("pro_passes", {
+        method: "POST",
+        headers: { Prefer: "return=minimal" },
+        body: { user_id: user.id, order_id: data.id, amount_paise: PRO_PRICE_PAISE },
+      });
+      return sendJson(res, 200, {
+        orderId: data.id,
+        amount: PRO_PRICE_PAISE,
+        currency: "INR",
+        keyId: RZP_KEY_ID,
+        minutes: PRO_MINUTES,
+        days: PRO_DAYS,
+      });
+    }
+
+    if (p === "/api/verify-payment" && req.method === "POST") {
+      if (!RZP_KEY_SECRET) return sendJson(res, 501, { error: "Payments aren't configured." });
+      const raw = await readBody(req, 64 * 1024);
+      let parsed;
+      try { parsed = JSON.parse(raw.toString("utf8")); }
+      catch (e) { return sendJson(res, 400, { error: "Invalid JSON" }); }
+      const orderId = String(parsed.razorpay_order_id || "");
+      const paymentId = String(parsed.razorpay_payment_id || "");
+      const signature = String(parsed.razorpay_signature || "");
+      if (!orderId || !paymentId || !signature) {
+        return sendJson(res, 400, { error: "Missing payment details." });
+      }
+      const expected = crypto.createHmac("sha256", RZP_KEY_SECRET)
+        .update(orderId + "|" + paymentId).digest("hex");
+      const a = Buffer.from(expected);
+      const b = Buffer.from(signature);
+      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return sendJson(res, 400, { error: "Payment verification failed. If you were charged, contact support@stenoji.com." });
+      }
+      // Find this user's pending pass for the order.
+      const rowRes = await sbRest(
+        "pro_passes?select=id,payment_id&order_id=eq." + encodeURIComponent(orderId) +
+        "&user_id=eq." + user.id
+      );
+      const rows = rowRes.ok ? await rowRes.json() : [];
+      if (!rows.length) return sendJson(res, 400, { error: "Order not found for this account." });
+      if (rows[0].payment_id) {
+        const cur = await proStatus(user.id);
+        return sendJson(res, 200, { ok: true, proUntil: cur.proUntil }); // already processed
+      }
+      // Extend from current Pro expiry if still active, else from now.
+      const cur = await proStatus(user.id);
+      const base = cur.proUntil && new Date(cur.proUntil) > new Date() ? new Date(cur.proUntil) : new Date();
+      const until = new Date(base.getTime() + PRO_DAYS * 24 * 60 * 60 * 1000).toISOString();
+      await sbRest("pro_passes?id=eq." + rows[0].id, {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: { payment_id: paymentId, valid_until: until },
+      });
+      return sendJson(res, 200, { ok: true, proUntil: until });
     }
 
     if (p === "/api/upload" && req.method === "POST") {
