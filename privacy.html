@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Stenoji</title>
+<meta name="robots" content="index,follow">
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+<style>
+  :root { --navy:#071D49; --blue:#2076F3; --ink:#13233F; --muted:#6B7A90; --line:#D8E6F7; --bg:#F7FAFF; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family: Inter,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--ink); background:var(--bg); line-height:1.65; }
+  .container { width:min(820px, calc(100% - 32px)); margin:0 auto; padding-bottom:70px; }
+  .nav { display:flex; align-items:center; justify-content:space-between; padding:18px 0 26px; }
+  .nav img { height:40px; }
+  .nav a.btn { background:var(--blue); color:#fff; padding:10px 18px; border-radius:12px; font-weight:700; text-decoration:none; font-size:14.5px; }
+  h1 { color:var(--navy); font-size:34px; letter-spacing:-.02em; margin-bottom:6px; }
+  .updated { color:var(--muted); font-size:14px; margin-bottom:28px; }
+  h2 { color:var(--navy); font-size:20px; margin:30px 0 8px; }
+  p, li { color:var(--ink); font-size:15.5px; margin-bottom:10px; }
+  ul { padding-left:22px; margin-bottom:10px; }
+  a { color:var(--blue); }
+  .card { background:#fff; border:1px solid var(--line); border-radius:20px; padding:34px; box-shadow:0 14px 40px rgba(8,34,74,.06); }
+</style>
+</head>
+<body>
+<div class="container">
+  <nav class="nav">
+    <a href="/"><img src="assets/icons/stenoji-logo.svg" alt="Stenoji.com"></a>
+    <a class="btn" href="/app.html">Open app</a>
+  </nav>
+  <div class="card">
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: 8 July 2026</p>
+
+    <p>Stenoji ("we", "us") is a transcription service operated from India, available at stenoji.com. This policy explains what data we handle and how. We keep it in plain language because we want you to actually read it.</p>
+
+    <h2>What we collect</h2>
+    <ul>
+      <li><b>Account details:</b> your email address and, if you sign in with Google, your name and profile picture as shared by Google. We never see your password when you use Google sign-in; email/password credentials are stored securely by our authentication provider (Supabase).</li>
+      <li><b>Usage records:</b> how many minutes of transcription you use each month, so we can apply your plan's limits.</li>
+      <li><b>Audio you submit:</b> recordings, uploads and meeting audio you choose to transcribe.</li>
+    </ul>
+
+    <h2>How your audio is processed</h2>
+    <p>Audio you submit is sent securely to our transcription provider (AssemblyAI) to generate the transcript, and transcripts you choose to Polish are sent to Google's Gemini API to restore punctuation. We do not currently store your transcripts or audio on our own servers after processing — results are delivered to your browser. Our processing partners retain data temporarily in line with their own policies (see AssemblyAI and Google AI privacy documentation).</p>
+
+    <h2>Your responsibility when recording others</h2>
+    <p>You must have the consent of meeting participants or other recorded persons before transcribing conversations, as required by applicable law. Stenoji provides the tool; you are responsible for using it lawfully.</p>
+
+    <h2>What we don't do</h2>
+    <ul>
+      <li>We do not sell your personal data.</li>
+      <li>We do not use your audio or transcripts to train AI models.</li>
+      <li>We do not show ads.</li>
+    </ul>
+
+    <h2>Cookies &amp; local storage</h2>
+    <p>We use browser local storage to keep you signed in. No advertising or cross-site tracking cookies are used.</p>
+
+    <h2>Service providers we rely on</h2>
+    <p>Supabase (accounts and usage database), AssemblyAI (speech-to-text), Google Gemini (transcript polishing), Render (hosting), and — once paid plans launch — Razorpay (payments; we never see or store your card details).</p>
+
+    <h2>Data deletion</h2>
+    <p>To delete your account and associated data, email us at <a href="mailto:support@stenoji.com">support@stenoji.com</a> from your registered address. We will action deletion within 30 days.</p>
+
+    <h2>Changes</h2>
+    <p>If we materially change this policy, we'll update the date above and, for significant changes, notify you in the app or by email.</p>
+
+    <h2>Contact</h2>
+    <p>Questions or concerns: <a href="mailto:support@stenoji.com">support@stenoji.com</a></p>
+  </div>
+</div>
+</body>
+</html>
