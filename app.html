@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stenoji — App</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/app-icons/stenoji-app-icon-180.png">
+<meta name="theme-color" content="#071D49">
+<style>
+  :root {
+    --bg: #0f1117; --panel: #181b24; --panel2: #1f2330; --border: #2a2f3e;
+    --text: #e8eaf0; --muted: #9aa1b2; --accent: #4f7cff; --accent2: #7c5cff;
+    --green: #2ecc8f; --red: #ff5c6c; --yellow: #ffc857;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .logo { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 18px; overflow: hidden; }
+  .logo img { width: 100%; height: 100%; object-fit: cover; }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header p { font-size: 12px; color: var(--muted); }
+  .container { max-width: 980px; margin: 0 auto; padding: 24px 20px 60px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .tab { padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; font-size: 14px; }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; margin-bottom: 6px; }
+  .card .hint { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-bottom: 12px; }
+  .card .hint b { color: var(--text); }
+  button { font-family: inherit; font-size: 14px; padding: 10px 18px; border-radius: 10px; border: none; cursor: pointer; background: var(--accent); color: #fff; }
+  button.secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
+  button.danger { background: var(--red); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  input[type="text"], input[type="email"], input[type="password"], select { font-family: inherit; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); width: 100%; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .transcript-box { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-height: 140px; max-height: 420px; overflow-y: auto; font-size: 15px; line-height: 1.7; white-space: pre-wrap; }
+  .interim { color: var(--muted); font-style: italic; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; }
+  .status-dot.live { background: var(--red); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .statusline { font-size: 13px; color: var(--muted); }
+  .dropzone { border: 2px dashed var(--border); border-radius: 12px; padding: 34px; text-align: center; color: var(--muted); cursor: pointer; font-size: 14px; transition: border-color 0.15s, background 0.15s; }
+  .dropzone.dragover { border-color: var(--accent); background: rgba(79,124,255,0.06); }
+  .utterance { display: flex; gap: 12px; margin-bottom: 14px; }
+  .speaker-chip { flex-shrink: 0; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; height: fit-content; margin-top: 2px; color: #fff; cursor: pointer; user-select: none; }
+  .speaker-chip:hover { outline: 2px solid rgba(255,255,255,0.4); }
+  .utterance .text { flex: 1; }
+  .utterance .ts { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+  .summary-card { border-left: 3px solid var(--green); }
+  .caption-line { font-size: 16px; line-height: 1.6; }
+  .progressbar { height: 6px; border-radius: 3px; background: var(--panel2); overflow: hidden; margin-top: 10px; }
+  .progressbar > div { height: 100%; width: 30%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); animation: slide 1.4s ease-in-out infinite; }
+  @keyframes slide { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--border); color: var(--muted); }
+  .error { color: var(--red); font-size: 13px; margin-top: 8px; }
+  .warn { color: var(--yellow); font-size: 13px; margin-top: 8px; }
+  .hidden { display: none !important; }
+  .toolbar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .steps { font-size: 12.5px; color: var(--muted); line-height: 1.7; margin: 8px 0 12px; padding-left: 18px; }
+  .steps b { color: var(--text); }
+  label.chk { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .divider { text-align: center; color: var(--muted); font-size: 12px; margin: 14px 0; }
+  /* ---- Auth & account ---- */
+  header { justify-content: space-between; }
+  .userbox { display: flex; align-items: center; gap: 14px; }
+  .user-email { font-size: 12.5px; color: var(--text); }
+  .usage-line { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .usage-bar { width: 170px; height: 5px; border-radius: 3px; background: var(--panel2); margin-top: 4px; overflow: hidden; }
+  .usage-bar > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 3px; }
+  .usage-bar > div.full { background: var(--red); }
+  .auth-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .auth-card { width: 100%; max-width: 380px; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+  .auth-card h2 { font-size: 18px; margin: 14px 0 4px; text-align: center; }
+  .auth-card .sub { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 18px; line-height: 1.5; }
+  .auth-card input { margin-bottom: 10px; }
+  .auth-mascot { width: 84px; height: 84px; border-radius: 50%; display: block; margin: 0 auto; }
+  .btn-google { width: 100%; background: #fff; color: #1a1a1a; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .btn-full { width: 100%; }
+  .auth-toggle { font-size: 13px; color: var(--muted); text-align: center; margin-top: 14px; }
+  .auth-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header>
+  <div style="display:flex; align-items:center; gap:12px">
+    <div class="logo"><img src="assets/mascot/stenoji-owl-avatar-circle.png" alt="Stenoji owl" onerror="this.parentNode.textContent='🎙️'"></div>
+    <div>
+      <h1>Stenoji</h1>
+      <p>Live transcription · online meetings · files &amp; links · speaker identification · AI summaries</p>
+    </div>
+  </div>
+  <div id="userBox" class="userbox hidden">
+    <div style="text-align:right">
+      <div class="user-email" id="userEmail"></div>
+      <div class="usage-line" id="usageLine"></div>
+      <div class="usage-bar"><div id="usageFill"></div></div>
+    </div>
+    <button class="secondary" id="btnSignOut" style="padding:8px 14px">Sign out</button>
+  </div>
+</header>
+
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <img class="auth-mascot" src="assets/mascot/stenoji-owl-avatar-circle.png" alt="Stenoji owl mascot" onerror="this.style.display='none'">
+    <h2>Welcome to Stenoji</h2>
+    <p class="sub" id="authSub">Sign in to get free transcription minutes every month.</p>
+    <button class="btn-google" id="btnGoogle">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.2 5.2C41 35.4 44 30.2 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+      Continue with Google
+    </button>
+    <div class="divider">— or use email —</div>
+    <input type="email" id="authEmail" placeholder="Email address" autocomplete="email">
+    <input type="password" id="authPassword" placeholder="Password (min 6 characters)" autocomplete="current-password">
+    <button class="btn-full" id="btnAuthSubmit">Sign in</button>
+    <div class="error hidden" id="authError"></div>
+    <div class="auth-toggle" id="authToggle">New here? <a id="authSwitch">Create an account</a></div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card">
+    <div class="row">
+      <label class="chk" style="white-space:nowrap">Transcription language:</label>
+      <select id="aaiLang" style="width:280px">
+        <option value="auto">🌐 Auto-detect (recommended)</option>
+        <option value="en">English</option>
+        <option value="hi">Hindi — हिन्दी</option>
+        <option value="ta">Tamil — தமிழ்</option>
+        <option value="te">Telugu — తెలుగు</option>
+        <option value="bn">Bengali — বাংলা</option>
+        <option value="mr">Marathi — मराठी</option>
+        <option value="gu">Gujarati — ગુજરાતી</option>
+        <option value="kn">Kannada — ಕನ್ನಡ</option>
+        <option value="ml">Malayalam — മലയാളം</option>
+        <option value="pa">Punjabi — ਪੰਜਾਬੀ</option>
+        <option value="ur">Urdu — اردو</option>
+        <option value="as">Assamese — অসমীয়া</option>
+        <option value="ne">Nepali — नेपाली</option>
+        <option value="sd">Sindhi — سنڌي</option>
+      </select>
+      <span class="statusline">Auto-detect handles mixed Hindi–English (Hinglish) meetings well.</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="chk" style="white-space:nowrap">Number of speakers:</label>
+      <select id="numSpeakers" style="width:200px">
+        <option value="auto">Auto-detect</option>
+        <option value="2">2 speakers</option>
+        <option value="3">3 speakers</option>
+        <option value="4">4 speakers</option>
+        <option value="5">5 speakers</option>
+        <option value="6">6 speakers</option>
+        <option value="8">8 speakers</option>
+        <option value="10">10 speakers</option>
+      </select>
+      <span class="statusline">If you know how many people spoke, setting this greatly improves speaker separation.</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-panel="meeting">💻 Online Meeting</button>
+    <button class="tab" data-panel="live">🔴 Live Mic</button>
+    <button class="tab" data-panel="file">📁 File / Link</button>
+  </div>
+
+  <!-- ============ MEETING TAB ============ -->
+  <div class="panel active" id="panel-meeting">
+    <div class="card">
+      <h2>Transcribe an online meeting (Zoom / Meet / Teams)</h2>
+      <ol class="steps">
+        <li>Join your meeting in <b>another browser tab</b> (use the web version of Zoom/Meet/Teams).</li>
+        <li>Click <b>Start capture</b> below → in the picker choose <b>that tab</b> and enable <b>“Also share tab audio”</b>.</li>
+        <li>Live captions appear while the meeting runs. When you <b>Stop</b>, you get a full transcript with <b>speaker labels</b> and an <b>AI summary</b>.</li>
+      </ol>
+      <div class="row">
+        <button id="btnMeetStart">▶ Start capture</button>
+        <button id="btnMeetStop" class="danger" disabled>■ Stop &amp; transcribe</button>
+        <label class="chk"><input type="checkbox" id="chkMic" checked> Include my microphone</label>
+        <span class="statusline"><span class="status-dot" id="meetDot"></span><span id="meetStatus">Idle</span></span>
+      </div>
+      <div id="meetError" class="error hidden"></div>
+      <div id="meetWarn" class="warn hidden"></div>
+    </div>
+
+    <div class="card hidden" id="captionCard">
+      <div class="row" style="justify-content:space-between">
+        <h2>Live captions</h2>
+        <span class="badge" id="meetTimer">0:00</span>
+      </div>
+      <div class="transcript-box" id="captionBox" style="margin-top:10px"><span class="interim">Waiting for speech…</span></div>
+    </div>
+
+    <div id="fileStatus-meet" class="statusline hidden" style="margin:0 4px 12px"></div>
+    <div class="progressbar hidden" id="fileProgress-meet"><div></div></div>
+
+    <div class="card summary-card hidden" id="summaryCard-meet">
+      <h2>📝 Meeting summary</h2>
+      <div id="summaryBody-meet" style="font-size:14px; line-height:1.6; margin-top:8px"></div>
+    </div>
+
+    <div class="card hidden" id="resultCard-meet">
+      <div class="row" style="justify-content:space-between">
+        <h2>Transcript <span class="badge" id="speakerCount-meet"></span></h2>
+        <span class="badge" id="duration-meet"></span>
+      </div>
+      <p class="hint" style="margin-top:6px">💡 Click a speaker chip to rename it (e.g. Speaker A → Rahul).</p>
+      <div class="transcript-box" id="transcript-meet"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopy-meet">Copy</button>
+        <button class="secondary" id="btnDownload-meet">Download .txt</button>
+        <button class="secondary" id="btnDownloadAudio-meet">Download recording</button>
+        <button class="secondary" id="btnPolish-meet">✨ Polish</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="polishCard-meet" style="border-left:3px solid var(--accent2)">
+      <h2>✨ Polished transcript</h2>
+      <div class="transcript-box" id="polishBox-meet" style="margin-top:10px"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopyPolish-meet">Copy</button>
+        <button class="secondary" id="btnDownloadPolish-meet">Download .txt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ LIVE MIC TAB ============ -->
+  <div class="panel" id="panel-live">
+    <div class="card">
+      <h2>Live microphone transcription</h2>
+      <p class="hint">Uses your browser's built-in speech engine. Works in <b>Chrome</b> and <b>Edge</b>. Single speaker only; for speaker identification use the Meeting or File tabs.</p>
+      <div class="row">
+        <select id="liveLang" style="width:240px">
+          <option value="en-US">English (US)</option>
+          <option value="en-IN">English (India)</option>
+          <option value="hi-IN">Hindi — हिन्दी</option>
+          <option value="ta-IN">Tamil — தமிழ்</option>
+          <option value="te-IN">Telugu — తెలుగు</option>
+          <option value="bn-IN">Bengali — বাংলা</option>
+          <option value="mr-IN">Marathi — मराठी</option>
+          <option value="gu-IN">Gujarati — ગુજરાતી</option>
+          <option value="kn-IN">Kannada — ಕನ್ನಡ</option>
+          <option value="ml-IN">Malayalam — മലയാളം</option>
+          <option value="pa-IN">Punjabi — ਪੰਜਾਬੀ</option>
+          <option value="ur-IN">Urdu — اردو</option>
+          <option value="en-GB">English (UK)</option>
+          <option value="es-ES">Spanish</option>
+          <option value="fr-FR">French</option>
+          <option value="de-DE">German</option>
+          <option value="ja-JP">Japanese</option>
+          <option value="zh-CN">Chinese (Mandarin)</option>
+        </select>
+        <button id="btnStart">▶ Start</button>
+        <button id="btnStop" class="danger" disabled>■ Stop</button>
+        <span class="statusline"><span class="status-dot" id="liveDot"></span><span id="liveStatus">Idle</span></span>
+      </div>
+      <div id="liveError" class="error hidden"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2>Transcript</h2>
+        <span class="badge" id="liveWordCount">0 words</span>
+      </div>
+      <div class="transcript-box" id="liveTranscript" style="margin-top:10px"><span class="interim">Press Start and begin speaking…</span></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopyLive">Copy</button>
+        <button class="secondary" id="btnDownloadLive">Download .txt</button>
+        <button class="secondary" id="btnClearLive">Clear</button>
+        <button class="secondary" id="btnPolishLive" title="Add punctuation & capitalization using AI">✨ Polish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FILE / LINK TAB ============ -->
+  <div class="panel" id="panel-file">
+    <div class="card">
+      <h2>Upload audio or video</h2>
+      <p class="hint">MP3, WAV, M4A, MP4, and most common formats. Speaker identification and an AI summary are generated automatically.</p>
+      <div class="dropzone" id="dropzone">
+        <div style="font-size:26px; margin-bottom:8px">⬆️</div>
+        Drop a file here or <b>click to browse</b>
+      </div>
+      <input type="file" id="fileInput" class="hidden" accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.webm,.ogg,.flac,.aac">
+
+      <div class="divider">— or transcribe an online video/audio link —</div>
+      <div class="row">
+        <input type="text" id="urlInput" placeholder="https://example.com/recording.mp4 (direct media link)" style="flex:1; min-width:240px">
+        <button id="btnUrl">Transcribe link</button>
+      </div>
+      <p class="hint" style="margin-top:8px">Works with any <b>direct, publicly accessible</b> media URL (.mp3, .mp4, .wav, podcast enclosure links, etc.). YouTube page links won't work — YouTube doesn't expose the media file directly.</p>
+
+      <div id="fileStatus-file" class="statusline hidden" style="margin-top:12px"></div>
+      <div class="progressbar hidden" id="fileProgress-file"><div></div></div>
+      <div id="fileError" class="error hidden"></div>
+    </div>
+
+    <div class="card summary-card hidden" id="summaryCard-file">
+      <h2>📝 Summary</h2>
+      <div id="summaryBody-file" style="font-size:14px; line-height:1.6; margin-top:8px"></div>
+    </div>
+
+    <div class="card hidden" id="resultCard-file">
+      <div class="row" style="justify-content:space-between">
+        <h2>Transcript <span class="badge" id="speakerCount-file"></span></h2>
+        <span class="badge" id="duration-file"></span>
+      </div>
+      <p class="hint" style="margin-top:6px">💡 Click a speaker chip to rename it (e.g. Speaker A → Rahul).</p>
+      <div class="transcript-box" id="transcript-file"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopy-file">Copy</button>
+        <button class="secondary" id="btnDownload-file">Download .txt</button>
+        <button class="secondary" id="btnPolish-file">✨ Polish</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="polishCard-file" style="border-left:3px solid var(--accent2)">
+      <h2>✨ Polished transcript</h2>
+      <div class="transcript-box" id="polishBox-file" style="margin-top:10px"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopyPolish-file">Copy</button>
+        <button class="secondary" id="btnDownloadPolish-file">Download .txt</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+function $(id) { return document.getElementById(id); }
+
+/* ---------------- Auth & usage (Supabase) ---------------- */
+var sb = null;
+var authToken = null;
+var authMode = "signin"; // or "signup"
+
+async function initAuth() {
+  try {
+    var cfg = await (await fetch("/api/config")).json();
+    $("authSub").innerHTML = "Sign in to get <b>" + (cfg.freeMinutes || 60) + " free minutes</b> of transcription every month.";
+    sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+    sb.auth.onAuthStateChange(function (_event, session) { applySession(session); });
+    var s = await sb.auth.getSession();
+    applySession(s.data ? s.data.session : null);
+  } catch (e) {
+    $("authError").textContent = "Could not load sign-in. Please refresh the page.";
+    $("authError").classList.remove("hidden");
+  }
+}
+
+function applySession(session) {
+  authToken = session ? session.access_token : null;
+  var signedIn = !!authToken;
+  $("authOverlay").classList.toggle("hidden", signedIn);
+  $("userBox").classList.toggle("hidden", !signedIn);
+  if (signedIn) {
+    $("userEmail").textContent = (session.user && session.user.email) || "";
+    refreshUsage();
+  }
+}
+
+async function refreshUsage() {
+  if (!authToken) return;
+  try {
+    var r = await authFetch("/api/me");
+    if (!r.ok) return;
+    var d = await r.json();
+    var usedMin = Math.round(d.usedSeconds / 60);
+    var limitMin = Math.round(d.limitSeconds / 60);
+    $("usageLine").textContent = usedMin + " of " + limitMin + " free min used this month";
+    var pct = Math.min(100, d.limitSeconds ? (d.usedSeconds / d.limitSeconds) * 100 : 0);
+    $("usageFill").style.width = pct + "%";
+    $("usageFill").classList.toggle("full", pct >= 100);
+  } catch (e) {}
+}
+
+async function authFetch(url, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers || {}, { authorization: "Bearer " + authToken });
+  var r = await fetch(url, opts);
+  if (r.status === 401) {
+    applySession(null);
+    throw new Error("Your session expired — please sign in again.");
+  }
+  return r;
+}
+
+$("btnGoogle").addEventListener("click", function () {
+  if (!sb) return;
+  sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + "/app.html" } });
+});
+
+$("btnAuthSubmit").addEventListener("click", async function () {
+  var email = $("authEmail").value.trim();
+  var pw = $("authPassword").value;
+  var errEl = $("authError");
+  errEl.classList.add("hidden");
+  if (!sb) return;
+  if (!email || !pw) {
+    errEl.textContent = "Please enter your email and password.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  var btn = this;
+  btn.disabled = true;
+  try {
+    var result = authMode === "signup"
+      ? await sb.auth.signUp({ email: email, password: pw })
+      : await sb.auth.signInWithPassword({ email: email, password: pw });
+    if (result.error) throw result.error;
+    if (authMode === "signup" && result.data && !result.data.session) {
+      errEl.textContent = "Almost done — check your email for a confirmation link, then sign in.";
+      errEl.classList.remove("hidden");
+    }
+  } catch (e) {
+    errEl.textContent = e.message || "Sign-in failed. Please try again.";
+    errEl.classList.remove("hidden");
+  }
+  btn.disabled = false;
+});
+
+$("authPassword").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") $("btnAuthSubmit").click();
+});
+
+$("authSwitch").addEventListener("click", function () {
+  authMode = authMode === "signin" ? "signup" : "signin";
+  $("btnAuthSubmit").textContent = authMode === "signup" ? "Create account" : "Sign in";
+  $("authToggle").childNodes[0].textContent = authMode === "signup" ? "Already have an account? " : "New here? ";
+  $("authSwitch").textContent = authMode === "signup" ? "Sign in" : "Create an account";
+});
+
+$("btnSignOut").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
+
+initAuth();
+
+/* ---------------- Tabs ---------------- */
+document.querySelectorAll(".tab").forEach(function (tab) {
+  tab.addEventListener("click", function () {
+    document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
+    document.querySelectorAll(".panel").forEach(function (p) { p.classList.remove("active"); });
+    tab.classList.add("active");
+    document.getElementById("panel-" + tab.dataset.panel).classList.add("active");
+  });
+});
+
+/* ---------------- Helpers ---------------- */
+function downloadBlob(filename, blob) {
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+}
+function downloadText(filename, text) {
+  downloadBlob(filename, new Blob([text], { type: "text/plain;charset=utf-8" }));
+}
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(function () {
+    var old = btn.textContent;
+    btn.textContent = "✓ Copied";
+    setTimeout(function () { btn.textContent = old; }, 1500);
+  });
+}
+function msToClock(ms) {
+  var s = Math.floor(ms / 1000);
+  var m = Math.floor(s / 60);
+  var h = Math.floor(m / 60);
+  s = s % 60; m = m % 60;
+  var mm = (m < 10 ? "0" : "") + m;
+  var ss = (s < 10 ? "0" : "") + s;
+  return h > 0 ? h + ":" + mm + ":" + ss : m + ":" + ss;
+}
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* ================= LIVE MIC (Web Speech API) ================= */
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var recognition = null;
+var userStopped = false;
+var finalText = "";
+var liveBox = $("liveTranscript");
+var liveErr = $("liveError");
+
+function updateLiveBox(interim) {
+  var html = "";
+  if (finalText) html += escapeHtml(finalText);
+  if (interim) html += '<span class="interim">' + escapeHtml(interim) + "</span>";
+  if (!html) html = '<span class="interim">Press Start and begin speaking…</span>';
+  liveBox.innerHTML = html;
+  liveBox.scrollTop = liveBox.scrollHeight;
+  var words = finalText.trim() ? finalText.trim().split(/\s+/).length : 0;
+  $("liveWordCount").textContent = words + " words";
+}
+function setLiveStatus(text, live) {
+  $("liveStatus").textContent = text;
+  $("liveDot").classList.toggle("live", !!live);
+}
+
+$("btnStart").addEventListener("click", function () {
+  liveErr.classList.add("hidden");
+  if (!SR) {
+    liveErr.textContent = "Your browser doesn't support the Web Speech API. Please use Chrome or Edge.";
+    liveErr.classList.remove("hidden");
+    return;
+  }
+  userStopped = false;
+  recognition = new SR();
+  recognition.lang = $("liveLang").value;
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = function () {
+    setLiveStatus("Listening…", true);
+    $("btnStart").disabled = true;
+    $("btnStop").disabled = false;
+  };
+  recognition.onresult = function (event) {
+    var interim = "";
+    for (var i = event.resultIndex; i < event.results.length; i++) {
+      var res = event.results[i];
+      if (res.isFinal) {
+        var t = res[0].transcript.trim();
+        if (t) finalText += (finalText ? " " : "") + t;
+      } else {
+        interim += res[0].transcript;
+      }
+    }
+    updateLiveBox(interim);
+  };
+  recognition.onerror = function (event) {
+    if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+      liveErr.textContent = "Microphone access denied. Allow mic access in your browser settings and try again.";
+      liveErr.classList.remove("hidden");
+      userStopped = true;
+    } else if (event.error === "network") {
+      liveErr.textContent = "Network error — the browser speech service needs an internet connection.";
+      liveErr.classList.remove("hidden");
+    }
+  };
+  recognition.onend = function () {
+    if (!userStopped) {
+      try { recognition.start(); return; } catch (e) {}
+    }
+    setLiveStatus("Idle", false);
+    $("btnStart").disabled = false;
+    $("btnStop").disabled = true;
+  };
+  try { recognition.start(); } catch (e) {
+    liveErr.textContent = "Could not start recognition: " + e.message;
+    liveErr.classList.remove("hidden");
+  }
+});
+$("btnStop").addEventListener("click", function () {
+  userStopped = true;
+  if (recognition) recognition.stop();
+});
+$("btnClearLive").addEventListener("click", function () { finalText = ""; updateLiveBox(""); });
+$("btnCopyLive").addEventListener("click", function () { copyText(finalText, $("btnCopyLive")); });
+$("btnDownloadLive").addEventListener("click", function () { downloadText("live-transcript.txt", finalText); });
+
+/* ================= SHARED: transcription via backend + rendering ================= */
+var SPEAKER_COLORS = ["#4f7cff", "#2ecc8f", "#ff8c42", "#c65cff", "#ffc857", "#ff5c6c", "#3ec9d6", "#9dd64f"];
+var speakerNames = {};
+var lastTranscripts = {};
+var plainTexts = {};
+
+function speakerLabel(code) {
+  return speakerNames[code] || ("Speaker " + code);
+}
+function setStatus(panel, text) {
+  var el = $("fileStatus-" + panel);
+  el.textContent = text;
+  el.classList.toggle("hidden", !text);
+}
+function setProgress(panel, on) {
+  $("fileProgress-" + panel).classList.toggle("hidden", !on);
+}
+
+function buildRequest(audioUrl) {
+  var lang = $("aaiLang").value;
+  var req = {
+    audio_url: audioUrl,
+    speech_models: ["universal-3-pro", "universal-2"],
+    speaker_labels: true,
+    summarization: true,
+    summary_model: "informative",
+    summary_type: "bullets",
+    language_detection: true
+  };
+  var n = $("numSpeakers").value;
+  if (n !== "auto") req.speakers_expected = parseInt(n, 10);
+  if (lang !== "auto") {
+    req.language_detection_options = {
+      expected_languages: lang === "en" ? ["en"] : [lang, "en"],
+      fallback_language: lang
+    };
+  }
+  return req;
+}
+
+async function runTranscriptJob(panel, audioUrl, filename, onError) {
+  try {
+    setStatus(panel, "Transcribing with speaker identification… usually ~15–30% of the audio's duration.");
+    var trRes = await authFetch("/api/transcript", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(buildRequest(audioUrl))
+    });
+    var job = await trRes.json();
+    if (!trRes.ok) throw new Error(job.error || "Transcription request failed (HTTP " + trRes.status + ").");
+
+    var transcript = null;
+    while (true) {
+      await new Promise(function (r) { setTimeout(r, 3000); });
+      var pollRes = await authFetch("/api/transcript/" + job.id);
+      transcript = await pollRes.json();
+      if (transcript.status === "completed") break;
+      if (transcript.status === "error") throw new Error(transcript.error || "Transcription failed.");
+      setStatus(panel, "Transcribing… (status: " + transcript.status + ")");
+    }
+
+    lastTranscripts[panel] = { t: transcript, filename: filename };
+    renderTranscript(panel);
+    setStatus(panel, "");
+    setProgress(panel, false);
+    refreshUsage();
+  } catch (err) {
+    setStatus(panel, "");
+    setProgress(panel, false);
+    onError(err.message || String(err));
+  }
+}
+
+async function transcribeBlob(panel, blob, filename, onError) {
+  if (blob.size > 500 * 1024 * 1024) { onError("File is too large (max ~500 MB)."); return; }
+  if (blob.size < 1000) { onError("The recording/file is empty — no audio was captured."); return; }
+  setProgress(panel, true);
+  try {
+    setStatus(panel, "Uploading (" + (blob.size / 1024 / 1024).toFixed(1) + " MB)…");
+    var upRes = await authFetch("/api/upload", { method: "POST", body: blob });
+    var upload = await upRes.json();
+    if (!upRes.ok) throw new Error(upload.error || "Upload failed (HTTP " + upRes.status + ").");
+    await runTranscriptJob(panel, upload.upload_url, filename, onError);
+  } catch (err) {
+    setStatus(panel, "");
+    setProgress(panel, false);
+    onError(err.message || String(err));
+  }
+}
+
+function renderTranscript(panel) {
+  var data = lastTranscripts[panel];
+  if (!data) return;
+  var t = data.t, filename = data.filename;
+  var box = $("transcript-" + panel);
+  box.innerHTML = "";
+  var plainLines = [];
+  var speakerOrder = {};
+
+  if (t.utterances && t.utterances.length) {
+    t.utterances.forEach(function (u) {
+      if (!(u.speaker in speakerOrder)) speakerOrder[u.speaker] = Object.keys(speakerOrder).length;
+      var color = SPEAKER_COLORS[speakerOrder[u.speaker] % SPEAKER_COLORS.length];
+      var div = document.createElement("div");
+      div.className = "utterance";
+      var chip = document.createElement("span");
+      chip.className = "speaker-chip";
+      chip.style.background = color;
+      chip.textContent = speakerLabel(u.speaker);
+      chip.title = "Click to rename this speaker";
+      chip.addEventListener("click", function () { renameSpeaker(u.speaker); });
+      var right = document.createElement("div");
+      right.className = "text";
+      var ts = document.createElement("div");
+      ts.className = "ts";
+      ts.textContent = msToClock(u.start);
+      var body = document.createElement("div");
+      body.textContent = u.text;
+      right.appendChild(ts);
+      right.appendChild(body);
+      div.appendChild(chip);
+      div.appendChild(right);
+      box.appendChild(div);
+      plainLines.push("[" + msToClock(u.start) + "] " + speakerLabel(u.speaker) + ": " + u.text);
+    });
+  } else {
+    box.textContent = t.text || "(no speech detected)";
+    plainLines.push(t.text || "");
+  }
+
+  var plain = plainLines.join("\n\n");
+  var nSpeakers = Object.keys(speakerOrder).length;
+  var LANG_NAMES = { en: "English", en_us: "English", en_uk: "English", en_au: "English", hi: "Hindi", ta: "Tamil", te: "Telugu", bn: "Bengali", mr: "Marathi", gu: "Gujarati", kn: "Kannada", ml: "Malayalam", pa: "Punjabi", ur: "Urdu", as: "Assamese", ne: "Nepali", sd: "Sindhi" };
+  var langBadge = t.language_code ? " · " + (LANG_NAMES[t.language_code] || t.language_code.toUpperCase()) : "";
+  $("speakerCount-" + panel).textContent = (nSpeakers ? nSpeakers + " speaker" + (nSpeakers > 1 ? "s" : "") : "") + langBadge;
+  $("duration-" + panel).textContent = t.audio_duration ? "Duration: " + msToClock(t.audio_duration * 1000) : "";
+  box.parentNode.querySelectorAll(".lang-note").forEach(function (n) { n.remove(); });
+  if (!nSpeakers && t.text) {
+    var note = document.createElement("div");
+    note.className = "warn lang-note";
+    note.style.marginBottom = "8px";
+    note.textContent = "Speaker identification isn't available for this language yet — showing plain transcript.";
+    box.parentNode.insertBefore(note, box);
+  }
+  $("resultCard-" + panel).classList.remove("hidden");
+
+  if (t.summary) {
+    var sBody = $("summaryBody-" + panel);
+    sBody.innerHTML = "";
+    t.summary.split("\n").forEach(function (line) {
+      line = line.trim();
+      if (!line) return;
+      var p = document.createElement("div");
+      p.style.marginBottom = "6px";
+      p.textContent = line.replace(/^[-•]\s*/, "• ");
+      sBody.appendChild(p);
+    });
+    $("summaryCard-" + panel).classList.remove("hidden");
+    plain = "SUMMARY\n" + t.summary + "\n\n---\n\nTRANSCRIPT\n\n" + plain;
+  }
+  plainTexts[panel] = plain;
+
+  $("btnDownload-" + panel).onclick = function () {
+    downloadText((filename || "transcript").replace(/\.[^.]+$/, "") + "-transcript.txt", plainTexts[panel]);
+  };
+  $("btnCopy-" + panel).onclick = function () { copyText(plainTexts[panel], $("btnCopy-" + panel)); };
+}
+
+function renameSpeaker(code) {
+  var current = speakerNames[code] || "";
+  var name = prompt('Name for "Speaker ' + code + '":', current);
+  if (name === null) return;
+  name = name.trim();
+  if (name) speakerNames[code] = name;
+  else delete speakerNames[code];
+  Object.keys(lastTranscripts).forEach(function (p) { renderTranscript(p); });
+}
+
+/* ================= POLISH (punctuation restore) ================= */
+async function polishText(text) {
+  var r = await authFetch("/api/polish", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ text: text })
+  });
+  var d = await r.json();
+  if (!r.ok || d.error) throw new Error(d.error || "Polish failed (HTTP " + r.status + ")");
+  return d.response || "";
+}
+
+function wirePolish(panel) {
+  $("btnPolish-" + panel).addEventListener("click", async function () {
+    if (!plainTexts[panel]) return;
+    var btn = this, orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Polishing…";
+    try {
+      var out = await polishText(plainTexts[panel]);
+      $("polishBox-" + panel).textContent = out;
+      $("polishCard-" + panel).classList.remove("hidden");
+      $("btnCopyPolish-" + panel).onclick = function () { copyText(out, this); };
+      $("btnDownloadPolish-" + panel).onclick = function () { downloadText("polished-transcript.txt", out); };
+    } catch (e) {
+      alert("Polish failed: " + e.message);
+    }
+    btn.disabled = false;
+    btn.textContent = orig;
+  });
+}
+wirePolish("meet");
+wirePolish("file");
+
+$("btnPolishLive").addEventListener("click", async function () {
+  if (!finalText.trim()) return;
+  var btn = this, orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Polishing…";
+  liveErr.classList.add("hidden");
+  try {
+    finalText = await polishText(finalText);
+    updateLiveBox("");
+  } catch (e) {
+    liveErr.textContent = "Polish failed: " + e.message;
+    liveErr.classList.remove("hidden");
+  }
+  btn.disabled = false;
+  btn.textContent = orig;
+});
+
+/* ================= FILE UPLOAD + URL ================= */
+var dropzone = $("dropzone");
+var fileInput = $("fileInput");
+dropzone.addEventListener("click", function () { fileInput.click(); });
+dropzone.addEventListener("dragover", function (e) { e.preventDefault(); dropzone.classList.add("dragover"); });
+dropzone.addEventListener("dragleave", function () { dropzone.classList.remove("dragover"); });
+dropzone.addEventListener("drop", function (e) {
+  e.preventDefault();
+  dropzone.classList.remove("dragover");
+  if (e.dataTransfer.files.length) startFileJob(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", function () {
+  if (fileInput.files.length) startFileJob(fileInput.files[0]);
+});
+function fileTabError(msg) {
+  $("fileError").textContent = msg;
+  $("fileError").classList.remove("hidden");
+}
+function resetFileTab() {
+  $("fileError").classList.add("hidden");
+  $("resultCard-file").classList.add("hidden");
+  $("summaryCard-file").classList.add("hidden");
+}
+function startFileJob(file) {
+  resetFileTab();
+  transcribeBlob("file", file, file.name, fileTabError);
+}
+$("btnUrl").addEventListener("click", function () {
+  var url = $("urlInput").value.trim();
+  if (!/^https?:\/\/.+/.test(url)) { fileTabError("Please enter a valid http(s) URL to a media file."); return; }
+  if (/(youtube\.com|youtu\.be)\//.test(url)) {
+    fileTabError("YouTube page links can't be transcribed directly — YouTube doesn't expose the media file. Use a direct media URL, or download the video and upload the file instead.");
+    return;
+  }
+  resetFileTab();
+  setProgress("file", true);
+  var name = url.split("/").pop().split("?")[0] || "online-media";
+  runTranscriptJob("file", url, name, fileTabError);
+});
+
+/* ================= ONLINE MEETING CAPTURE ================= */
+var meet = {
+  displayStream: null, micStream: null, audioCtx: null, mixBus: null,
+  recorder: null, chunks: [], ws: null, proc: null,
+  timerInterval: null, startedAt: 0, recordingBlob: null, active: false
+};
+var captionFinal = "";
+
+function setMeetStatus(text, live) {
+  $("meetStatus").textContent = text;
+  $("meetDot").classList.toggle("live", !!live);
+}
+function meetError(msg) {
+  $("meetError").textContent = msg;
+  $("meetError").classList.remove("hidden");
+}
+function meetWarn(msg) {
+  $("meetWarn").textContent = msg;
+  $("meetWarn").classList.toggle("hidden", !msg);
+}
+function updateCaptions(partial) {
+  var box = $("captionBox");
+  var html = "";
+  if (captionFinal) html += '<span class="caption-line">' + escapeHtml(captionFinal) + "</span>";
+  if (partial) html += '<span class="interim"> ' + escapeHtml(partial) + "</span>";
+  if (!html) html = '<span class="interim">Waiting for speech…</span>';
+  box.innerHTML = html;
+  box.scrollTop = box.scrollHeight;
+}
+
+$("btnMeetStart").addEventListener("click", startMeeting);
+$("btnMeetStop").addEventListener("click", stopMeeting);
+
+async function startMeeting() {
+  $("meetError").classList.add("hidden");
+  meetWarn("");
+  $("resultCard-meet").classList.add("hidden");
+  $("summaryCard-meet").classList.add("hidden");
+  captionFinal = "";
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    meetError("Screen/tab capture isn't supported in this browser. Use Chrome or Edge.");
+    return;
+  }
+
+  try {
+    meet.displayStream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: { echoCancellation: false, noiseSuppression: false }
+    });
+  } catch (e) {
+    meetError("Capture was cancelled or blocked.");
+    return;
+  }
+
+  if (!meet.displayStream.getAudioTracks().length) {
+    meet.displayStream.getTracks().forEach(function (t) { t.stop(); });
+    meetError('No audio captured. In the picker, select the meeting TAB (not window/screen) and turn ON "Also share tab audio", then try again.');
+    return;
+  }
+
+  meet.micStream = null;
+  if ($("chkMic").checked) {
+    try {
+      meet.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      meetWarn("Microphone unavailable — capturing meeting audio only (your own voice may not be transcribed).");
+    }
+  }
+
+  meet.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  meet.mixBus = meet.audioCtx.createGain();
+  var tabSrc = meet.audioCtx.createMediaStreamSource(
+    new MediaStream([meet.displayStream.getAudioTracks()[0]])
+  );
+  tabSrc.connect(meet.mixBus);
+  if (meet.micStream) {
+    meet.audioCtx.createMediaStreamSource(meet.micStream).connect(meet.mixBus);
+  }
+  var dest = meet.audioCtx.createMediaStreamDestination();
+  meet.mixBus.connect(dest);
+
+  meet.chunks = [];
+  var mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
+  try {
+    meet.recorder = new MediaRecorder(dest.stream, { mimeType: mime });
+  } catch (e) {
+    meet.recorder = new MediaRecorder(dest.stream);
+  }
+  meet.recorder.ondataavailable = function (e) { if (e.data.size) meet.chunks.push(e.data); };
+  meet.recorder.onstop = onRecordingReady;
+  meet.recorder.start(1000);
+
+  var vTrack = meet.displayStream.getVideoTracks()[0];
+  if (vTrack) vTrack.onended = function () { if (meet.active) stopMeeting(); };
+
+  meet.active = true;
+  meet.startedAt = Date.now();
+  $("captionCard").classList.remove("hidden");
+  updateCaptions("");
+  $("btnMeetStart").disabled = true;
+  $("btnMeetStop").disabled = false;
+  setMeetStatus("Recording meeting…", true);
+  meet.timerInterval = setInterval(function () {
+    $("meetTimer").textContent = msToClock(Date.now() - meet.startedAt);
+  }, 1000);
+
+  startLiveCaptions();
+}
+
+async function startLiveCaptions() {
+  try {
+    var r = await authFetch("/api/streaming-token");
+    if (!r.ok) throw new Error("token HTTP " + r.status);
+    var tok = await r.json();
+    if (!tok.token) throw new Error("no token");
+    var rate = Math.round(meet.audioCtx.sampleRate);
+    var ws = new WebSocket("wss://streaming.assemblyai.com/v3/ws?sample_rate=" + rate + "&token=" + encodeURIComponent(tok.token));
+    ws.binaryType = "arraybuffer";
+    meet.ws = ws;
+
+    ws.onopen = function () {
+      meet.proc = meet.audioCtx.createScriptProcessor(4096, 1, 1);
+      meet.mixBus.connect(meet.proc);
+      var mute = meet.audioCtx.createGain();
+      mute.gain.value = 0;
+      meet.proc.connect(mute);
+      mute.connect(meet.audioCtx.destination);
+      meet.proc.onaudioprocess = function (e) {
+        if (ws.readyState !== 1) return;
+        var f32 = e.inputBuffer.getChannelData(0);
+        var i16 = new Int16Array(f32.length);
+        for (var i = 0; i < f32.length; i++) {
+          var s = Math.max(-1, Math.min(1, f32[i]));
+          i16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+        ws.send(i16.buffer);
+      };
+    };
+    ws.onmessage = function (ev) {
+      try {
+        var m = JSON.parse(ev.data);
+        if (m.type === "Turn") {
+          if (m.end_of_turn && m.transcript) {
+            captionFinal += (captionFinal ? " " : "") + m.transcript;
+            updateCaptions("");
+          } else {
+            updateCaptions(m.transcript || "");
+          }
+        }
+      } catch (e) {}
+    };
+    ws.onerror = function () { captionsUnavailable(); };
+    ws.onclose = function (ev) { if (meet.active && ev.code !== 1000) captionsUnavailable(); };
+  } catch (e) {
+    captionsUnavailable();
+  }
+}
+
+function captionsUnavailable() {
+  if (!meet.active) return;
+  meetWarn("Live captions unavailable (English-only, and streaming may require a funded AssemblyAI account). Recording continues — you'll get the full transcript, speakers and summary when you stop.");
+  if (meet.proc) { try { meet.proc.disconnect(); } catch (e) {} meet.proc = null; }
+}
+
+function stopMeeting() {
+  if (!meet.active) return;
+  meet.active = false;
+  clearInterval(meet.timerInterval);
+  setMeetStatus("Processing…", false);
+  $("btnMeetStop").disabled = true;
+
+  if (meet.ws) { try { meet.ws.close(1000); } catch (e) {} meet.ws = null; }
+  if (meet.proc) { try { meet.proc.disconnect(); } catch (e) {} meet.proc = null; }
+  if (meet.recorder && meet.recorder.state !== "inactive") {
+    meet.recorder.stop();
+  }
+  if (meet.displayStream) meet.displayStream.getTracks().forEach(function (t) { t.stop(); });
+  if (meet.micStream) meet.micStream.getTracks().forEach(function (t) { t.stop(); });
+}
+
+function onRecordingReady() {
+  if (meet.audioCtx) { try { meet.audioCtx.close(); } catch (e) {} meet.audioCtx = null; }
+  meet.recordingBlob = new Blob(meet.chunks, { type: "audio/webm" });
+  $("btnDownloadAudio-meet").onclick = function () {
+    downloadBlob("meeting-recording.webm", meet.recordingBlob);
+  };
+  $("btnMeetStart").disabled = false;
+  setMeetStatus("Idle", false);
+
+  transcribeBlob("meet", meet.recordingBlob, "meeting.webm", function (msg) {
+    meetError(msg + ' — you can still download the recording and use the File tab later.');
+    $("resultCard-meet").classList.remove("hidden");
+    $("transcript-meet").innerHTML = '<span class="interim">Transcription failed — recording is available via "Download recording".</span>';
+  });
+}
+</script>
+</body>
+</html>
