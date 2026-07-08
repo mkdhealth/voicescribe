@@ -78,6 +78,11 @@
   .steps b { color: var(--text); }
   label.chk { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; cursor: pointer; }
   .divider { text-align: center; color: var(--muted); font-size: 12px; margin: 14px 0; }
+  .hist-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 4px; border-bottom: 1px solid var(--border); }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-item .t { font-size: 14px; }
+  .hist-item .m { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .hist-item button { padding: 7px 12px; font-size: 13px; }
   /* ---- Auth & account ---- */
   header { justify-content: space-between; }
   .userbox { display: flex; align-items: center; gap: 14px; }
@@ -209,6 +214,7 @@
     <button class="tab active" data-panel="meeting">💻 Online Meeting</button>
     <button class="tab" data-panel="live">🔴 Live Mic</button>
     <button class="tab" data-panel="file">📁 File / Link</button>
+    <button class="tab" data-panel="history">📜 History</button>
   </div>
 
   <!-- ============ MEETING TAB ============ -->
@@ -396,6 +402,31 @@
       <div class="toolbar">
         <button class="secondary" id="btnCopyTranslate-file">Copy</button>
         <button class="secondary" id="btnDownloadTranslate-file">Download .txt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ HISTORY TAB ============ -->
+  <div class="panel" id="panel-history">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2>Your saved transcripts</h2>
+        <span class="badge" id="historyLimitBadge"></span>
+      </div>
+      <p class="hint">On Plus &amp; Pro, transcripts from the Meeting and File tabs are saved here automatically (your last 20). Audio is never stored.</p>
+      <div id="historyList"></div>
+      <div id="historyEmpty" class="statusline" style="margin-top:8px">Nothing saved yet — transcribe something first!</div>
+      <div id="historyError" class="error hidden"></div>
+    </div>
+    <div class="card hidden" id="historyViewCard">
+      <div class="row" style="justify-content:space-between">
+        <h2 id="historyViewTitle"></h2>
+        <span class="badge" id="historyViewMeta"></span>
+      </div>
+      <div class="transcript-box" id="historyViewBox" style="margin-top:10px"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnHistCopy">Copy</button>
+        <button class="secondary" id="btnHistDownload">Download .txt</button>
       </div>
     </div>
   </div>
@@ -791,6 +822,7 @@ async function runTranscriptJob(panel, audioUrl, filename, onError) {
     setStatus(panel, "");
     setProgress(panel, false);
     refreshUsage();
+    saveToHistory(panel, transcript, filename);
   } catch (err) {
     setStatus(panel, "");
     setProgress(panel, false);
@@ -1024,6 +1056,102 @@ $("btnPolishLive").addEventListener("click", async function () {
   btn.disabled = false;
   btn.textContent = orig;
 });
+
+/* ================= TRANSCRIPT HISTORY ================= */
+async function saveToHistory(panel, t, filename) {
+  if (!userPlan.active) return; // history is a Plus/Pro feature
+  try {
+    await authFetch("/api/history", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        title: filename || "Transcript",
+        language: t.language_code || "",
+        durationSeconds: t.audio_duration || 0,
+        content: plainTexts[panel] || t.text || ""
+      })
+    });
+  } catch (e) {}
+}
+
+async function loadHistory() {
+  var list = $("historyList"), empty = $("historyEmpty"), err = $("historyError");
+  err.classList.add("hidden");
+  list.innerHTML = "";
+  if (!userPlan.active) {
+    $("historyLimitBadge").textContent = "⭐ Plus / Pro feature";
+    empty.classList.add("hidden");
+    $("historyViewCard").classList.add("hidden");
+    var up = document.createElement("div");
+    up.className = "statusline";
+    up.style.marginTop = "8px";
+    up.textContent = "📜 Transcript history is a Plus / Pro feature — upgrade and your transcripts will be saved here automatically. ";
+    var b = document.createElement("button");
+    b.textContent = "⭐ See plans";
+    b.style.marginLeft = "8px";
+    b.onclick = function () { $("planError").classList.add("hidden"); $("planOverlay").classList.remove("hidden"); };
+    up.appendChild(b);
+    list.appendChild(up);
+    return;
+  }
+  try {
+    var r = await authFetch("/api/history");
+    var d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Could not load history");
+    $("historyLimitBadge").textContent = d.items.length + " of " + d.limit + " kept";
+    empty.classList.toggle("hidden", d.items.length > 0);
+    d.items.forEach(function (it) {
+      var row = document.createElement("div");
+      row.className = "hist-item";
+      var left = document.createElement("div");
+      var tEl = document.createElement("div"); tEl.className = "t"; tEl.textContent = it.title;
+      var mEl = document.createElement("div"); mEl.className = "m";
+      mEl.textContent = new Date(it.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) +
+        (it.duration_seconds ? " · " + Math.max(1, Math.round(it.duration_seconds / 60)) + " min" : "") +
+        (it.language ? " · " + it.language.toUpperCase() : "");
+      left.appendChild(tEl); left.appendChild(mEl);
+      var right = document.createElement("div");
+      var bView = document.createElement("button");
+      bView.className = "secondary"; bView.textContent = "View"; bView.style.marginRight = "6px";
+      bView.onclick = function () { viewHistory(it.id, it.title); };
+      var bDel = document.createElement("button");
+      bDel.className = "secondary"; bDel.textContent = "🗑"; bDel.title = "Delete permanently";
+      bDel.onclick = async function () {
+        if (!confirm('Delete "' + it.title + '" permanently?')) return;
+        try {
+          await authFetch("/api/history/" + it.id, { method: "DELETE" });
+          $("historyViewCard").classList.add("hidden");
+          loadHistory();
+        } catch (e) {}
+      };
+      right.appendChild(bView); right.appendChild(bDel);
+      row.appendChild(left); row.appendChild(right);
+      list.appendChild(row);
+    });
+  } catch (e) {
+    err.textContent = e.message;
+    err.classList.remove("hidden");
+  }
+}
+
+async function viewHistory(id, title) {
+  try {
+    var r = await authFetch("/api/history/" + id);
+    var d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Could not open transcript");
+    $("historyViewTitle").textContent = d.title || title;
+    $("historyViewMeta").textContent = new Date(d.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    $("historyViewBox").textContent = d.content || "";
+    $("historyViewCard").classList.remove("hidden");
+    $("btnHistCopy").onclick = function () { copyText(d.content || "", this); };
+    $("btnHistDownload").onclick = function () {
+      downloadText((d.title || "transcript").replace(/\.[^.]+$/, "") + ".txt", d.content || "");
+    };
+    $("historyViewCard").scrollIntoView({ behavior: "smooth" });
+  } catch (e) { alert(e.message); }
+}
+
+document.querySelector('[data-panel="history"]').addEventListener("click", loadHistory);
 
 /* ================= FILE UPLOAD + URL ================= */
 var dropzone = $("dropzone");
