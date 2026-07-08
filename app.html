@@ -331,6 +331,7 @@
         <button class="secondary" id="btnClearLive">Clear</button>
         <button class="secondary" id="btnPolishLive" title="Add punctuation & capitalization using AI">✨ Polish</button>
         <button class="secondary" id="btnTranslateLive" title="Translate the transcript to English">🌐 Translate to English</button>
+        <button class="secondary" id="btnSaveLive" title="Save this dictation to your History (Plus/Pro)">💾 Save to History</button>
       </div>
     </div>
 
@@ -1164,6 +1165,39 @@ async function viewHistory(id, title) {
 }
 
 document.querySelector('[data-panel="history"]').addEventListener("click", loadHistory);
+
+$("btnSaveLive").addEventListener("click", async function () {
+  if (!userPlan.active) {
+    $("planError").textContent = "💾 Saving to History is a Plus / Pro feature — choose a plan to unlock it.";
+    $("planError").classList.remove("hidden");
+    $("planOverlay").classList.remove("hidden");
+    return;
+  }
+  if (!finalText.trim()) { alert("Nothing to save yet — dictate something first."); return; }
+  var btn = this, orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+  try {
+    var r = await authFetch("/api/history", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        title: "Live dictation — " + new Date().toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }),
+        language: ($("liveLang").value || "").split("-")[0],
+        durationSeconds: 0,
+        content: finalText
+      })
+    });
+    var d = await r.json();
+    if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
+    btn.textContent = "✓ Saved";
+    setTimeout(function () { btn.textContent = orig; }, 2000);
+  } catch (e) {
+    alert("Could not save: " + e.message);
+    btn.textContent = orig;
+  }
+  btn.disabled = false;
+});
 
 /* ================= FILE UPLOAD + URL ================= */
 var dropzone = $("dropzone");
