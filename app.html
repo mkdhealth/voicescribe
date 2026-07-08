@@ -1061,7 +1061,7 @@ $("btnPolishLive").addEventListener("click", async function () {
 async function saveToHistory(panel, t, filename) {
   if (!userPlan.active) return; // history is a Plus/Pro feature
   try {
-    await authFetch("/api/history", {
+    var r = await authFetch("/api/history", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -1071,7 +1071,15 @@ async function saveToHistory(panel, t, filename) {
         content: plainTexts[panel] || t.text || ""
       })
     });
-  } catch (e) {}
+    var d = await r.json();
+    if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
+  } catch (e) {
+    var el = $("fileStatus-" + panel);
+    if (el) {
+      el.textContent = "⚠️ Transcript is ready, but saving to History failed: " + e.message;
+      el.classList.remove("hidden");
+    }
+  }
 }
 
 async function loadHistory() {
