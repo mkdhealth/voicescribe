@@ -7,6 +7,21 @@
 <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/app-icons/stenoji-app-icon-180.png">
 <meta name="theme-color" content="#071D49">
+<!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-26XPZNWXNN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-26XPZNWXNN');
+  // Meta Pixel — loads only when META_PIXEL_ID is configured on the server.
+  fetch('/api/config').then(function(r){ return r.json(); }).then(function(c){
+    if (!c.metaPixelId) return;
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', c.metaPixelId);
+    fbq('track', 'PageView');
+  }).catch(function(){});
+</script>
 <style>
   :root {
     --bg: #0f1117; --panel: #181b24; --panel2: #1f2330; --border: #2a2f3e;
@@ -421,6 +436,14 @@ function applySession(session) {
   if (signedIn) {
     $("userEmail").textContent = (session.user && session.user.email) || "";
     refreshUsage();
+    // Track first-ever sign-in on this browser as a signup conversion.
+    if (!localStorage.getItem("st_signup_tracked")) {
+      localStorage.setItem("st_signup_tracked", "1");
+      try {
+        if (typeof gtag === "function") gtag("event", "sign_up", { method: "stenoji" });
+        if (window.fbq) fbq("track", "CompleteRegistration");
+      } catch (e) {}
+    }
   }
 }
 
@@ -544,6 +567,15 @@ async function startCheckout(planId) {
           });
           var vd = await vr.json();
           if (!vr.ok || !vd.ok) throw new Error(vd.error || "Verification failed.");
+          // Track the purchase conversion with its rupee value.
+          try {
+            if (typeof gtag === "function") gtag("event", "purchase", {
+              value: d.amount / 100, currency: "INR",
+              transaction_id: resp.razorpay_payment_id,
+              items: [{ item_name: d.label + " pass" }]
+            });
+            if (window.fbq) fbq("track", "Purchase", { value: d.amount / 100, currency: "INR" });
+          } catch (e) {}
           alert("🎉 Welcome to " + d.label + "! You have " + d.minutes + " minutes/month until " +
             new Date(vd.proUntil).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) + ".");
           refreshUsage();
