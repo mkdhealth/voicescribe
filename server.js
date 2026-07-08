@@ -28,12 +28,23 @@ if (SUPABASE_URL && !/^https?:\/\//i.test(SUPABASE_URL)) SUPABASE_URL = "https:/
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const FREE_MINUTES = parseInt(process.env.FREE_MINUTES || "60", 10);
-// Pro pass (Razorpay) — payments are disabled until both keys are set.
+// Paid passes (Razorpay) — payments are disabled until both keys are set.
 const RZP_KEY_ID = process.env.RAZORPAY_KEY_ID || "";
 const RZP_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
-const PRO_MINUTES = parseInt(process.env.PRO_MINUTES || "1200", 10);
-const PRO_PRICE_PAISE = parseInt(process.env.PRO_PRICE_PAISE || "49900", 10); // ₹499
-const PRO_DAYS = parseInt(process.env.PRO_DAYS || "30", 10);
+const PLANS = {
+  plus: {
+    label: "Plus",
+    minutes: parseInt(process.env.PLUS_MINUTES || "1200", 10),   // 20 hrs
+    paise: parseInt(process.env.PLUS_PRICE_PAISE || "49900", 10), // ₹499
+    days: parseInt(process.env.PLUS_DAYS || "30", 10),
+  },
+  pro: {
+    label: "Pro",
+    minutes: parseInt(process.env.PRO_MINUTES || "2400", 10),    // 40 hrs
+    paise: parseInt(process.env.PRO_PRICE_PAISE || "79900", 10),  // ₹799
+    days: parseInt(process.env.PRO_DAYS || "30", 10),
+  },
+};
 const AAI = "https://api.assemblyai.com/v2";
 
 const PUBLIC_DIR = fs.existsSync(path.join(__dirname, "public"))
@@ -89,6 +100,16 @@ function readBody(req, limit) {
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
+}
+
+// Pass a request body through chunk-by-chunk (no buffering in RAM), enforcing a size cap.
+async function* limitStream(source, limit) {
+  let size = 0;
+  for await (const chunk of source) {
+    size += chunk.length;
+    if (size > limit) throw new Error("Payload too large");
+    yield chunk;
+  }
 }
 
 async function proxyJsonResponse(res, r) {
@@ -167,32 +188,40 @@ async function usedSecondsThisMonth(userId) {
   return rows.reduce((sum, row) => sum + (row.seconds || 0), 0);
 }
 
-// Is this user on an active Pro pass?
-async function proStatus(userId) {
+// Which paid plan (if any) is active for this user? Highest-minute active pass wins.
+async function planStatus(userId) {
   try {
     const r = await sbRest(
-      "pro_passes?select=valid_until&user_id=eq." + userId +
+      "pro_passes?select=plan,minutes,valid_until&user_id=eq." + userId +
       "&valid_until=gte." + encodeURIComponent(new Date().toISOString()) +
-      "&order=valid_until.desc&limit=1"
+      "&order=minutes.desc,valid_until.desc&limit=1"
     );
-    if (!r.ok) return { isPro: false, proUntil: null };
+    if (!r.ok) return { active: false };
     const rows = await r.json();
-    if (!rows.length) return { isPro: false, proUntil: null };
-    return { isPro: true, proUntil: rows[0].valid_until };
+    if (!rows.length) return { active: false };
+    const def = PLANS[rows[0].plan];
+    return {
+      active: true,
+      plan: rows[0].plan,
+      planLabel: def ? def.label : rows[0].plan,
+      minutes: rows[0].minutes || (def ? def.minutes : PLANS.plus.minutes),
+      proUntil: rows[0].valid_until,
+    };
   } catch (e) {
-    return { isPro: false, proUntil: null };
+    return { active: false };
   }
 }
 
 // Returns null if the user still has minutes, otherwise a friendly error string.
 async function limitExceededMessage(userId) {
-  const [used, plan] = await Promise.all([usedSecondsThisMonth(userId), proStatus(userId)]);
-  const limitMin = plan.isPro ? PRO_MINUTES : FREE_MINUTES;
+  const [used, plan] = await Promise.all([usedSecondsThisMonth(userId), planStatus(userId)]);
+  const limitMin = plan.active ? plan.minutes : FREE_MINUTES;
   if (used < limitMin * 60) return null;
-  return plan.isPro
-    ? "You've used all " + PRO_MINUTES + " Pro minutes for this month. Minutes reset on the 1st."
+  return plan.active
+    ? "You've used all " + limitMin + " " + plan.planLabel + " minutes for this month. Minutes reset on the 1st" +
+      (plan.plan === "plus" ? " — or upgrade to Pro for " + PLANS.pro.minutes + " minutes/month." : ".")
     : "You've used all " + FREE_MINUTES + " free minutes for this month. " +
-      "Your minutes reset on the 1st — or upgrade to Pro for " + PRO_MINUTES + " minutes/month.";
+      "Your minutes reset on the 1st — or upgrade for up to " + PLANS.pro.minutes + " minutes/month.";
 }
 
 async function registerTranscript(userId, transcriptId) {
@@ -238,9 +267,13 @@ const server = http.createServer(async (req, res) => {
         supabaseAnonKey: SUPABASE_ANON_KEY,
         freeMinutes: FREE_MINUTES,
         paymentsEnabled: !!(RZP_KEY_ID && RZP_KEY_SECRET),
-        proPriceRupees: Math.round(PRO_PRICE_PAISE / 100),
-        proMinutes: PRO_MINUTES,
-        proDays: PRO_DAYS,
+        plans: Object.keys(PLANS).map((id) => ({
+          id,
+          label: PLANS[id].label,
+          minutes: PLANS[id].minutes,
+          priceRupees: Math.round(PLANS[id].paise / 100),
+          days: PLANS[id].days,
+        })),
       });
     }
 
@@ -252,30 +285,38 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (p === "/api/me" && req.method === "GET") {
-      const [used, plan] = await Promise.all([usedSecondsThisMonth(user.id), proStatus(user.id)]);
+      const [used, plan] = await Promise.all([usedSecondsThisMonth(user.id), planStatus(user.id)]);
       return sendJson(res, 200, {
         email: user.email,
         usedSeconds: used,
-        limitSeconds: (plan.isPro ? PRO_MINUTES : FREE_MINUTES) * 60,
-        isPro: plan.isPro,
-        proUntil: plan.proUntil,
+        limitSeconds: (plan.active ? plan.minutes : FREE_MINUTES) * 60,
+        isPro: plan.active,
+        plan: plan.active ? plan.plan : "free",
+        planLabel: plan.active ? plan.planLabel : "Free",
+        proUntil: plan.active ? plan.proUntil : null,
       });
     }
 
-    // ---------- Payments: 30-day Pro pass (Razorpay) ----------
+    // ---------- Payments: 30-day passes (Razorpay) ----------
     if (p === "/api/create-order" && req.method === "POST") {
       if (!RZP_KEY_ID || !RZP_KEY_SECRET) {
         return sendJson(res, 501, { error: "Payments aren't available yet — coming very soon!" });
       }
+      const raw = await readBody(req, 16 * 1024);
+      let parsed = {};
+      try { parsed = JSON.parse(raw.toString("utf8") || "{}"); } catch (e) {}
+      const planId = String(parsed.plan || "plus");
+      const plan = PLANS[planId];
+      if (!plan) return sendJson(res, 400, { error: "Unknown plan." });
       const basic = Buffer.from(RZP_KEY_ID + ":" + RZP_KEY_SECRET).toString("base64");
       const r = await fetch("https://api.razorpay.com/v1/orders", {
         method: "POST",
         headers: { authorization: "Basic " + basic, "content-type": "application/json" },
         body: JSON.stringify({
-          amount: PRO_PRICE_PAISE,
+          amount: plan.paise,
           currency: "INR",
-          receipt: "pro-" + Date.now(),
-          notes: { user_id: user.id, email: user.email, product: "pro-pass-" + PRO_DAYS + "d" },
+          receipt: planId + "-" + Date.now(),
+          notes: { user_id: user.id, email: user.email, product: planId + "-pass-" + plan.days + "d" },
         }),
       });
       let data;
@@ -287,15 +328,16 @@ const server = http.createServer(async (req, res) => {
       await sbRest("pro_passes", {
         method: "POST",
         headers: { Prefer: "return=minimal" },
-        body: { user_id: user.id, order_id: data.id, amount_paise: PRO_PRICE_PAISE },
+        body: { user_id: user.id, order_id: data.id, amount_paise: plan.paise, plan: planId, minutes: plan.minutes },
       });
       return sendJson(res, 200, {
         orderId: data.id,
-        amount: PRO_PRICE_PAISE,
+        amount: plan.paise,
         currency: "INR",
         keyId: RZP_KEY_ID,
-        minutes: PRO_MINUTES,
-        days: PRO_DAYS,
+        label: plan.label,
+        minutes: plan.minutes,
+        days: plan.days,
       });
     }
 
@@ -320,19 +362,20 @@ const server = http.createServer(async (req, res) => {
       }
       // Find this user's pending pass for the order.
       const rowRes = await sbRest(
-        "pro_passes?select=id,payment_id&order_id=eq." + encodeURIComponent(orderId) +
+        "pro_passes?select=id,payment_id,plan&order_id=eq." + encodeURIComponent(orderId) +
         "&user_id=eq." + user.id
       );
       const rows = rowRes.ok ? await rowRes.json() : [];
       if (!rows.length) return sendJson(res, 400, { error: "Order not found for this account." });
       if (rows[0].payment_id) {
-        const cur = await proStatus(user.id);
-        return sendJson(res, 200, { ok: true, proUntil: cur.proUntil }); // already processed
+        const cur = await planStatus(user.id);
+        return sendJson(res, 200, { ok: true, proUntil: cur.proUntil || null }); // already processed
       }
-      // Extend from current Pro expiry if still active, else from now.
-      const cur = await proStatus(user.id);
-      const base = cur.proUntil && new Date(cur.proUntil) > new Date() ? new Date(cur.proUntil) : new Date();
-      const until = new Date(base.getTime() + PRO_DAYS * 24 * 60 * 60 * 1000).toISOString();
+      // Extend from current expiry if a pass is still active, else from now.
+      const planDef = PLANS[rows[0].plan] || PLANS.plus;
+      const cur = await planStatus(user.id);
+      const base = cur.active && cur.proUntil && new Date(cur.proUntil) > new Date() ? new Date(cur.proUntil) : new Date();
+      const until = new Date(base.getTime() + planDef.days * 24 * 60 * 60 * 1000).toISOString();
       await sbRest("pro_passes?id=eq." + rows[0].id, {
         method: "PATCH",
         headers: { Prefer: "return=minimal" },
@@ -344,11 +387,13 @@ const server = http.createServer(async (req, res) => {
     if (p === "/api/upload" && req.method === "POST") {
       const limitMsg = await limitExceededMessage(user.id);
       if (limitMsg) return sendJson(res, 402, { error: limitMsg });
-      const body = await readBody(req, MAX_UPLOAD);
+      // Stream the file straight through to AssemblyAI — never held in memory,
+      // so many users can upload large files at the same time.
       const r = await fetch(AAI + "/upload", {
         method: "POST",
         headers: { authorization: AAI_KEY },
-        body,
+        body: limitStream(req, MAX_UPLOAD),
+        duplex: "half",
       });
       return proxyJsonResponse(res, r);
     }
@@ -426,6 +471,53 @@ const server = http.createServer(async (req, res) => {
       catch (e) { data = { error: { message: "Upstream returned non-JSON (HTTP " + r.status + ")" } }; }
       if (!r.ok) {
         const msg = (data.error && data.error.message) || "Polish failed (HTTP " + r.status + ")";
+        return sendJson(res, r.status, { error: msg });
+      }
+      let out = "";
+      try { out = data.candidates[0].content.parts.map((pt) => pt.text || "").join(""); }
+      catch (e) { return sendJson(res, 502, { error: "Unexpected response from Gemini." }); }
+      return sendJson(res, 200, { response: out.trim() });
+    }
+
+    if (p === "/api/translate" && req.method === "POST") {
+      const raw = await readBody(req, 2 * 1024 * 1024);
+      let parsed;
+      try { parsed = JSON.parse(raw.toString("utf8")); }
+      catch (e) { return sendJson(res, 400, { error: "Invalid JSON" }); }
+      const text = String(parsed.text || "").slice(0, 250000);
+      if (!text.trim()) return sendJson(res, 400, { error: "No text provided" });
+      const plan = await planStatus(user.id);
+      if (!plan.active) {
+        return sendJson(res, 402, { error: "English translation is available on Plus and Pro plans. Upgrade to unlock it!" });
+      }
+      if (!GEMINI_KEY) {
+        return sendJson(res, 501, {
+          error: "Translation isn't configured yet — add a GEMINI_API_KEY environment variable.",
+        });
+      }
+      const prompt =
+        "The following is a meeting or speech transcript, possibly in an Indian language or a mix of " +
+        "languages (e.g. Hinglish). Translate it fully into clear, natural English suitable for meeting " +
+        "documentation. Preserve the structure exactly: if lines start with [timestamps] or speaker names, " +
+        "keep those prefixes unchanged. Do not summarize, omit, add, or editorialize anything — translate " +
+        "every line faithfully. If a line is already in English, keep it as is (fixing only punctuation). " +
+        "Return ONLY the translated transcript with no preamble or explanation.\n\nTRANSCRIPT:\n" + text;
+      const r = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-goog-api-key": GEMINI_KEY },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.2 },
+          }),
+        }
+      );
+      let data;
+      try { data = await r.json(); }
+      catch (e) { data = { error: { message: "Upstream returned non-JSON (HTTP " + r.status + ")" } }; }
+      if (!r.ok) {
+        const msg = (data.error && data.error.message) || "Translation failed (HTTP " + r.status + ")";
         return sendJson(res, r.status, { error: msg });
       }
       let out = "";
