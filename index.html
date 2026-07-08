@@ -13,6 +13,21 @@
 <meta property="og:image" content="https://stenoji.com/assets/social/stenoji-og-image-1200x630.png">
 <meta property="og:url" content="https://stenoji.com">
 <meta property="og:type" content="website">
+<!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-26XPZNWXNN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-26XPZNWXNN');
+  // Meta Pixel — loads only when META_PIXEL_ID is configured on the server.
+  fetch('/api/config').then(function(r){ return r.json(); }).then(function(c){
+    if (!c.metaPixelId) return;
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', c.metaPixelId);
+    fbq('track', 'PageView');
+  }).catch(function(){});
+</script>
 <style>
   :root {
     --navy: #071D49; --blue: #2076F3; --blue2: #4DA3FF; --sky: #EAF3FF; --sky2: #F6FAFF;
