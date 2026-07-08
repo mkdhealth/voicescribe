@@ -134,6 +134,23 @@
   </div>
 </div>
 
+<div class="auth-overlay hidden" id="planOverlay">
+  <div class="auth-card" style="max-width:420px">
+    <h2 style="margin-top:0">Choose your plan</h2>
+    <p class="sub">One-time payment · valid 30 days · no auto-debit</p>
+    <div style="border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px">
+      <div><div style="font-weight:700">Plus</div><div style="font-size:12.5px; color:var(--muted)">1,200 minutes (20 hours)</div></div>
+      <button id="btnBuyPlus">₹499</button>
+    </div>
+    <div style="border:1px solid var(--accent); border-radius:12px; padding:14px 16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px">
+      <div><div style="font-weight:700">Pro <span class="badge" style="margin-left:4px">Best value</span></div><div style="font-size:12.5px; color:var(--muted)">2,400 minutes (40 hours)</div></div>
+      <button id="btnBuyPro">₹799</button>
+    </div>
+    <div class="error hidden" id="planError"></div>
+    <div class="auth-toggle"><a id="btnClosePlans">Cancel</a></div>
+  </div>
+</div>
+
 <div class="container">
   <div class="card">
     <div class="row">
@@ -226,6 +243,7 @@
         <button class="secondary" id="btnDownload-meet">Download .txt</button>
         <button class="secondary" id="btnDownloadAudio-meet">Download recording</button>
         <button class="secondary" id="btnPolish-meet">✨ Polish</button>
+        <button class="secondary" id="btnTranslate-meet">🌐 Translate to English</button>
       </div>
     </div>
 
@@ -235,6 +253,15 @@
       <div class="toolbar">
         <button class="secondary" id="btnCopyPolish-meet">Copy</button>
         <button class="secondary" id="btnDownloadPolish-meet">Download .txt</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="translateCard-meet" style="border-left:3px solid var(--green)">
+      <h2>🌐 English translation</h2>
+      <div class="transcript-box" id="translateBox-meet" style="margin-top:10px"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopyTranslate-meet">Copy</button>
+        <button class="secondary" id="btnDownloadTranslate-meet">Download .txt</button>
       </div>
     </div>
   </div>
@@ -282,6 +309,16 @@
         <button class="secondary" id="btnDownloadLive">Download .txt</button>
         <button class="secondary" id="btnClearLive">Clear</button>
         <button class="secondary" id="btnPolishLive" title="Add punctuation & capitalization using AI">✨ Polish</button>
+        <button class="secondary" id="btnTranslateLive" title="Translate the transcript to English">🌐 Translate to English</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="translateCard-live" style="border-left:3px solid var(--green)">
+      <h2>🌐 English translation</h2>
+      <div class="transcript-box" id="translateBox-live" style="margin-top:10px"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopyTranslate-live">Copy</button>
+        <button class="secondary" id="btnDownloadTranslate-live">Download .txt</button>
       </div>
     </div>
   </div>
@@ -325,6 +362,7 @@
         <button class="secondary" id="btnCopy-file">Copy</button>
         <button class="secondary" id="btnDownload-file">Download .txt</button>
         <button class="secondary" id="btnPolish-file">✨ Polish</button>
+        <button class="secondary" id="btnTranslate-file">🌐 Translate to English</button>
       </div>
     </div>
 
@@ -334,6 +372,15 @@
       <div class="toolbar">
         <button class="secondary" id="btnCopyPolish-file">Copy</button>
         <button class="secondary" id="btnDownloadPolish-file">Download .txt</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="translateCard-file" style="border-left:3px solid var(--green)">
+      <h2>🌐 English translation</h2>
+      <div class="transcript-box" id="translateBox-file" style="margin-top:10px"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopyTranslate-file">Copy</button>
+        <button class="secondary" id="btnDownloadTranslate-file">Download .txt</button>
       </div>
     </div>
   </div>
@@ -349,6 +396,7 @@ var sb = null;
 var authToken = null;
 var authMode = "signin"; // or "signup"
 var appCfg = {};
+var userPlan = { active: false, plan: "free" };
 
 async function initAuth() {
   try {
@@ -386,11 +434,14 @@ async function refreshUsage() {
     var limitMin = Math.round(d.limitSeconds / 60);
     if (d.isPro) {
       var until = d.proUntil ? new Date(d.proUntil).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
-      $("usageLine").textContent = usedMin + " of " + limitMin + " min · ⭐ Pro until " + until;
+      $("usageLine").textContent = usedMin + " of " + limitMin + " min · ⭐ " + (d.planLabel || "Pro") + " until " + until;
     } else {
       $("usageLine").textContent = usedMin + " of " + limitMin + " free min used this month";
     }
-    $("btnUpgrade").classList.toggle("hidden", !!d.isPro || !appCfg.paymentsEnabled || !window.Razorpay);
+    // Hide Upgrade only for users already on the top plan.
+    $("btnUpgrade").classList.toggle("hidden", d.plan === "pro" || !appCfg.paymentsEnabled || !window.Razorpay);
+    userPlan = { active: !!d.isPro, plan: d.plan || "free" };
+    updateTranslateButtons();
     var pct = Math.min(100, d.limitSeconds ? (d.usedSeconds / d.limitSeconds) * 100 : 0);
     $("usageFill").style.width = pct + "%";
     $("usageFill").classList.toggle("full", pct >= 100);
@@ -455,12 +506,23 @@ $("authSwitch").addEventListener("click", function () {
 
 $("btnSignOut").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
 
-/* ---------------- Upgrade to Pro (Razorpay 30-day pass) ---------------- */
-$("btnUpgrade").addEventListener("click", async function () {
-  var btn = this;
-  btn.disabled = true;
+/* ---------------- Upgrade (Razorpay 30-day passes: Plus / Pro) ---------------- */
+$("btnUpgrade").addEventListener("click", function () {
+  $("planError").classList.add("hidden");
+  $("planOverlay").classList.remove("hidden");
+});
+$("btnClosePlans").addEventListener("click", function () {
+  $("planOverlay").classList.add("hidden");
+});
+
+async function startCheckout(planId) {
+  $("planOverlay").classList.add("hidden");
   try {
-    var r = await authFetch("/api/create-order", { method: "POST" });
+    var r = await authFetch("/api/create-order", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ plan: planId })
+    });
     var d = await r.json();
     if (!r.ok) throw new Error(d.error || "Could not start the payment. Please try again.");
     var rzp = new Razorpay({
@@ -469,7 +531,7 @@ $("btnUpgrade").addEventListener("click", async function () {
       currency: d.currency,
       order_id: d.orderId,
       name: "Stenoji",
-      description: "Pro — " + d.minutes + " minutes for " + d.days + " days",
+      description: d.label + " — " + d.minutes + " minutes for " + d.days + " days",
       image: "assets/mascot/stenoji-owl-avatar-circle.png",
       prefill: { email: $("userEmail").textContent },
       theme: { color: "#4f7cff" },
@@ -482,12 +544,12 @@ $("btnUpgrade").addEventListener("click", async function () {
           });
           var vd = await vr.json();
           if (!vr.ok || !vd.ok) throw new Error(vd.error || "Verification failed.");
-          alert("🎉 Welcome to Pro! You have " + d.minutes + " minutes/month until " +
+          alert("🎉 Welcome to " + d.label + "! You have " + d.minutes + " minutes/month until " +
             new Date(vd.proUntil).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) + ".");
           refreshUsage();
         } catch (e) {
           alert("Your payment went through but we couldn't confirm it automatically: " + e.message +
-            "\n\nDon't worry — email support@stenoji.com with your payment ID and we'll activate Pro manually.");
+            "\n\nDon't worry — email support@stenoji.com with your payment ID and we'll activate your plan manually.");
         }
       }
     });
@@ -498,8 +560,10 @@ $("btnUpgrade").addEventListener("click", async function () {
   } catch (e) {
     alert(e.message);
   }
-  btn.disabled = false;
-});
+}
+
+$("btnBuyPlus").addEventListener("click", function () { startCheckout("plus"); });
+$("btnBuyPro").addEventListener("click", function () { startCheckout("pro"); });
 
 initAuth();
 
@@ -841,6 +905,77 @@ function wirePolish(panel) {
 wirePolish("meet");
 wirePolish("file");
 
+/* ================= TRANSLATE TO ENGLISH (via Gemini, Plus/Pro only) ================= */
+function updateTranslateButtons() {
+  var label = userPlan.active ? "🌐 Translate to English" : "🔒 Translate to English";
+  var title = userPlan.active ? "Translate the transcript to English" : "Available on Plus and Pro plans";
+  ["btnTranslate-meet", "btnTranslate-file", "btnTranslateLive"].forEach(function (id) {
+    var b = $(id);
+    if (b && !b.disabled) { b.textContent = label; b.title = title; }
+  });
+}
+
+// If a free user taps Translate, show the plan chooser instead.
+function translateUpsell() {
+  $("planError").textContent = "🌐 Translate to English is a Plus / Pro feature — choose a plan to unlock it.";
+  $("planError").classList.remove("hidden");
+  $("planOverlay").classList.remove("hidden");
+}
+
+async function translateText(text) {
+  var r = await authFetch("/api/translate", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ text: text })
+  });
+  var d = await r.json();
+  if (!r.ok || d.error) throw new Error(d.error || "Translation failed (HTTP " + r.status + ")");
+  return d.response || "";
+}
+
+function showTranslation(panel, out) {
+  $("translateBox-" + panel).textContent = out;
+  $("translateCard-" + panel).classList.remove("hidden");
+  $("btnCopyTranslate-" + panel).onclick = function () { copyText(out, this); };
+  $("btnDownloadTranslate-" + panel).onclick = function () { downloadText("english-translation.txt", out); };
+}
+
+function wireTranslate(panel) {
+  $("btnTranslate-" + panel).addEventListener("click", async function () {
+    if (!userPlan.active) { translateUpsell(); return; }
+    if (!plainTexts[panel]) return;
+    var btn = this, orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Translating…";
+    try {
+      showTranslation(panel, await translateText(plainTexts[panel]));
+    } catch (e) {
+      alert("Translation failed: " + e.message);
+    }
+    btn.disabled = false;
+    btn.textContent = orig;
+  });
+}
+wireTranslate("meet");
+wireTranslate("file");
+
+$("btnTranslateLive").addEventListener("click", async function () {
+  if (!userPlan.active) { translateUpsell(); return; }
+  if (!finalText.trim()) return;
+  var btn = this, orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Translating…";
+  liveErr.classList.add("hidden");
+  try {
+    showTranslation("live", await translateText(finalText));
+  } catch (e) {
+    liveErr.textContent = "Translation failed: " + e.message;
+    liveErr.classList.remove("hidden");
+  }
+  btn.disabled = false;
+  btn.textContent = orig;
+});
+
 $("btnPolishLive").addEventListener("click", async function () {
   if (!finalText.trim()) return;
   var btn = this, orig = btn.textContent;
@@ -931,6 +1066,13 @@ function updateCaptions(partial) {
 $("btnMeetStart").addEventListener("click", startMeeting);
 $("btnMeetStop").addEventListener("click", stopMeeting);
 
+// On phones, tab-audio capture isn't possible — say so upfront instead of after a failed click.
+if ((!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) &&
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+  $("btnMeetStart").disabled = true;
+  meetWarn("📱 On phones, meeting capture isn't available (mobile browsers don't allow tab audio capture — a limitation of iOS/Android, not Stenoji). Instead: record the meeting audio on your phone and upload it in the File / Link tab, or use Live Mic for in-person conversations. On a computer, this tab works in Chrome and Edge.");
+}
+
 async function startMeeting() {
   $("meetError").classList.add("hidden");
   meetWarn("");
@@ -939,7 +1081,10 @@ async function startMeeting() {
   captionFinal = "";
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-    meetError("Screen/tab capture isn't supported in this browser. Use Chrome or Edge.");
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    meetError(isMobile
+      ? "Meeting capture needs a desktop browser (Chrome or Edge on a computer) — phones don't allow tab audio capture. On your phone: record the meeting audio and upload it in the File / Link tab, or use the Live Mic tab for in-person conversations."
+      : "Screen/tab capture isn't supported in this browser. Use Chrome or Edge on desktop.");
     return;
   }
 
