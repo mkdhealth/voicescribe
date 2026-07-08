@@ -28,6 +28,8 @@ if (SUPABASE_URL && !/^https?:\/\//i.test(SUPABASE_URL)) SUPABASE_URL = "https:/
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const FREE_MINUTES = parseInt(process.env.FREE_MINUTES || "60", 10);
+const HISTORY_FREE = parseInt(process.env.HISTORY_FREE || "0", 10);   // saved transcripts, free plan (0 = feature off)
+const HISTORY_PAID = parseInt(process.env.HISTORY_PAID || "20", 10);  // saved transcripts, Plus/Pro
 // Paid passes (Razorpay) — payments are disabled until both keys are set.
 const RZP_KEY_ID = process.env.RAZORPAY_KEY_ID || "";
 const RZP_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
@@ -76,6 +78,7 @@ const MIME = {
   ".ico": "image/x-icon",
   ".json": "application/json",
   ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
 };
 
 function sendJson(res, status, obj) {
@@ -296,6 +299,76 @@ const server = http.createServer(async (req, res) => {
         planLabel: plan.active ? plan.planLabel : "Free",
         proUntil: plan.active ? plan.proUntil : null,
       });
+    }
+
+    // ---------- Transcript history ----------
+    if (p === "/api/history" && req.method === "GET") {
+      const plan = await planStatus(user.id);
+      const limit = plan.active ? HISTORY_PAID : HISTORY_FREE;
+      if (limit <= 0) return sendJson(res, 200, { items: [], limit: 0 });
+      const r = await sbRest(
+        "transcripts?select=id,title,language,duration_seconds,created_at&user_id=eq." + user.id +
+        "&order=created_at.desc&limit=" + limit
+      );
+      const items = r.ok ? await r.json() : [];
+      return sendJson(res, 200, { items, limit });
+    }
+
+    if (p === "/api/history" && req.method === "POST") {
+      const plan0 = await planStatus(user.id);
+      const limit0 = plan0.active ? HISTORY_PAID : HISTORY_FREE;
+      if (limit0 <= 0) {
+        return sendJson(res, 402, { error: "Transcript history is available on Plus and Pro plans." });
+      }
+      const raw = await readBody(req, 512 * 1024);
+      let parsed;
+      try { parsed = JSON.parse(raw.toString("utf8")); }
+      catch (e) { return sendJson(res, 400, { error: "Invalid JSON" }); }
+      const content = String(parsed.content || "").slice(0, 400000);
+      if (!content.trim()) return sendJson(res, 400, { error: "Nothing to save" });
+      const ins = await sbRest("transcripts", {
+        method: "POST",
+        headers: { Prefer: "return=minimal" },
+        body: {
+          user_id: user.id,
+          title: String(parsed.title || "Transcript").slice(0, 200),
+          language: String(parsed.language || "").slice(0, 20),
+          duration_seconds: Math.max(0, parseInt(parsed.durationSeconds, 10) || 0),
+          content,
+        },
+      });
+      if (!ins.ok) return sendJson(res, 502, { error: "Could not save transcript." });
+      // Keep only the newest N transcripts for this user.
+      const plan = await planStatus(user.id);
+      const limit = plan.active ? HISTORY_PAID : HISTORY_FREE;
+      const lr = await sbRest("transcripts?select=id&user_id=eq." + user.id + "&order=created_at.desc");
+      if (lr.ok) {
+        const rows = await lr.json();
+        if (rows.length > limit) {
+          const old = rows.slice(limit).map((x) => x.id).join(",");
+          await sbRest("transcripts?user_id=eq." + user.id + "&id=in.(" + old + ")", {
+            method: "DELETE", headers: { Prefer: "return=minimal" },
+          });
+        }
+      }
+      return sendJson(res, 200, { ok: true });
+    }
+
+    const histMatch = p.match(/^\/api\/history\/(\d+)$/);
+    if (histMatch && req.method === "GET") {
+      const r = await sbRest(
+        "transcripts?select=id,title,language,duration_seconds,content,created_at&id=eq." + histMatch[1] +
+        "&user_id=eq." + user.id + "&limit=1"
+      );
+      const rows = r.ok ? await r.json() : [];
+      if (!rows.length) return sendJson(res, 404, { error: "Transcript not found." });
+      return sendJson(res, 200, rows[0]);
+    }
+    if (histMatch && req.method === "DELETE") {
+      await sbRest("transcripts?id=eq." + histMatch[1] + "&user_id=eq." + user.id, {
+        method: "DELETE", headers: { Prefer: "return=minimal" },
+      });
+      return sendJson(res, 200, { ok: true });
     }
 
     // ---------- Payments: 30-day passes (Razorpay) ----------
