@@ -159,11 +159,11 @@
     <h2 style="margin-top:0">Choose your plan</h2>
     <p class="sub">One-time payment · valid 30 days · no auto-debit</p>
     <div style="border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px">
-      <div><div style="font-weight:700">Plus</div><div style="font-size:12.5px; color:var(--muted)">1,200 minutes (20 hours)</div></div>
+      <div><div style="font-weight:700">Plus</div><div style="font-size:12.5px; color:var(--muted)">1,200 minutes (20 hours) + live meeting captions</div></div>
       <button id="btnBuyPlus">₹499</button>
     </div>
     <div style="border:1px solid var(--accent); border-radius:12px; padding:14px 16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px">
-      <div><div style="font-weight:700">Pro <span class="badge" style="margin-left:4px">Best value</span></div><div style="font-size:12.5px; color:var(--muted)">2,400 minutes (40 hours)</div></div>
+      <div><div style="font-weight:700">Pro <span class="badge" style="margin-left:4px">Best value</span></div><div style="font-size:12.5px; color:var(--muted)">2,400 minutes (40 hours) + live meeting captions</div></div>
       <button id="btnBuyPro">₹799</button>
     </div>
     <div class="error hidden" id="planError"></div>
@@ -808,10 +808,12 @@ function buildRequest(audioUrl) {
 async function runTranscriptJob(panel, audioUrl, filename, onError) {
   try {
     setStatus(panel, "Transcribing with speaker identification… usually ~15–30% of the audio's duration.");
+    var reqBody = buildRequest(audioUrl);
+    if (panel === "meet" && meet.captionsUsed) reqBody.captions_used = true;
     var trRes = await authFetch("/api/transcript", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(buildRequest(audioUrl))
+      body: JSON.stringify(reqBody)
     });
     var job = await trRes.json();
     if (!trRes.ok) throw new Error(job.error || "Transcription request failed (HTTP " + trRes.status + ").");
@@ -1251,7 +1253,8 @@ $("btnUrl").addEventListener("click", function () {
 var meet = {
   displayStream: null, micStream: null, audioCtx: null, mixBus: null,
   recorder: null, chunks: [], ws: null, proc: null,
-  timerInterval: null, startedAt: 0, recordingBlob: null, active: false
+  timerInterval: null, startedAt: 0, recordingBlob: null, active: false,
+  captionsUsed: false
 };
 var captionFinal = "";
 
@@ -1354,6 +1357,7 @@ async function startMeeting() {
   if (vTrack) vTrack.onended = function () { if (meet.active) stopMeeting(); };
 
   meet.active = true;
+  meet.captionsUsed = false;
   meet.startedAt = Date.now();
   $("captionCard").classList.remove("hidden");
   updateCaptions("");
@@ -1364,7 +1368,11 @@ async function startMeeting() {
     $("meetTimer").textContent = msToClock(Date.now() - meet.startedAt);
   }, 1000);
 
-  startLiveCaptions();
+  if (userPlan.active) {
+    startLiveCaptions();
+  } else {
+    meetWarn("Live captions are a ⭐ Plus / Pro feature. Your recording continues — full transcript, speakers and summary arrive when you Stop. (On paid plans, captioned meetings count 2× minutes.)");
+  }
 }
 
 async function startLiveCaptions() {
@@ -1379,6 +1387,7 @@ async function startLiveCaptions() {
     meet.ws = ws;
 
     ws.onopen = function () {
+      meet.captionsUsed = true;
       meet.proc = meet.audioCtx.createScriptProcessor(4096, 1, 1);
       meet.mixBus.connect(meet.proc);
       var mute = meet.audioCtx.createGain();
