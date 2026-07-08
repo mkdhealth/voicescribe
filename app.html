@@ -794,6 +794,13 @@ function buildRequest(audioUrl) {
       expected_languages: lang === "en" ? ["en"] : [lang, "en"],
       fallback_language: lang
     };
+  } else {
+    // Constrain auto-detect to our supported set and fall back to English
+    // when confidence is low (prevents e.g. short English clips reading as Urdu).
+    req.language_detection_options = {
+      expected_languages: ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "ne", "sd"],
+      fallback_language: "en"
+    };
   }
   return req;
 }
