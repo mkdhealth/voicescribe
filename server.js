@@ -227,31 +227,35 @@ async function limitExceededMessage(userId) {
       "Your minutes reset on the 1st — or upgrade for up to " + PLANS.pro.minutes + " minutes/month.";
 }
 
-async function registerTranscript(userId, transcriptId) {
+async function registerTranscript(userId, transcriptId, kind) {
   try {
     await sbRest("usage_events?on_conflict=transcript_id", {
       method: "POST",
       headers: { Prefer: "return=minimal,resolution=ignore-duplicates" },
-      body: { user_id: userId, transcript_id: transcriptId, kind: "batch", seconds: 0 },
+      body: { user_id: userId, transcript_id: transcriptId, kind: kind || "batch", seconds: 0 },
     });
   } catch (e) {
     console.error("Failed to register transcript " + transcriptId + ": " + e.message);
   }
 }
 
-// Bill a completed transcript exactly once: only updates the row if seconds is still 0.
+// Bill a completed transcript exactly once. Meetings that used live captions
+// (kind "captions2x") are billed at double minutes — streaming costs run twice.
 async function billTranscript(userId, transcriptId, seconds) {
   if (!seconds || seconds <= 0) return;
   try {
-    await sbRest(
-      "usage_events?transcript_id=eq." + encodeURIComponent(transcriptId) +
-      "&user_id=eq." + userId + "&seconds=eq.0",
-      {
-        method: "PATCH",
-        headers: { Prefer: "return=minimal" },
-        body: { seconds: Math.round(seconds) },
-      }
+    const q = await sbRest(
+      "usage_events?select=id,kind,seconds&transcript_id=eq." + encodeURIComponent(transcriptId) +
+      "&user_id=eq." + userId + "&limit=1"
     );
+    const rows = q.ok ? await q.json() : [];
+    if (!rows.length || rows[0].seconds !== 0) return; // unknown or already billed
+    const mult = rows[0].kind === "captions2x" ? 2 : 1;
+    await sbRest("usage_events?id=eq." + rows[0].id + "&seconds=eq.0", {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: { seconds: Math.round(seconds * mult) },
+    });
   } catch (e) {
     console.error("Failed to bill transcript " + transcriptId + ": " + e.message);
   }
@@ -498,7 +502,9 @@ const server = http.createServer(async (req, res) => {
       let data;
       try { data = await r.json(); }
       catch (e) { data = { error: "Upstream returned non-JSON (HTTP " + r.status + ")" }; }
-      if (r.ok && data.id) await registerTranscript(user.id, data.id);
+      if (r.ok && data.id) {
+        await registerTranscript(user.id, data.id, parsed.captions_used === true ? "captions2x" : "batch");
+      }
       return sendJson(res, r.status, data);
     }
 
@@ -606,6 +612,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (p === "/api/streaming-token" && req.method === "GET") {
+      const plan = await planStatus(user.id);
+      if (!plan.active) {
+        return sendJson(res, 403, { error: "Live captions are available on Plus and Pro plans. Your recording and full transcript work on every plan." });
+      }
       const limitMsg = await limitExceededMessage(user.id);
       if (limitMsg) return sendJson(res, 402, { error: limitMsg });
       const r = await fetch(
