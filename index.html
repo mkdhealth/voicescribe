@@ -97,8 +97,9 @@
   .lang-chip { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 9px 18px; font-weight: 600; color: var(--navy); font-size: 14.5px; box-shadow: 0 8px 20px rgba(8,34,74,.05); }
   .lang-chip.more { background: var(--sky); color: var(--blue); }
 
-  .pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 380px)); gap: 22px; justify-content: center; }
-  @media (max-width: 720px) { .pricing-grid { grid-template-columns: 1fr; } }
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 340px)); gap: 20px; justify-content: center; }
+  @media (max-width: 960px) { .pricing-grid { grid-template-columns: repeat(2, minmax(0, 340px)); } }
+  @media (max-width: 660px) { .pricing-grid { grid-template-columns: 1fr; } }
   .price-card { background: #fff; border: 1px solid var(--line); border-radius: 28px; padding: 30px; box-shadow: 0 14px 40px rgba(8,34,74,.07); }
   .price-card.featured { border: 2px solid var(--blue); position: relative; }
   .price-card .plan { font-weight: 800; color: var(--navy); font-size: 18px; }
@@ -292,17 +293,30 @@
       </div>
       <div class="price-card featured">
         <div class="ribbon">MOST POPULAR</div>
-        <div class="plan">Pro</div>
+        <div class="plan">Plus</div>
         <div class="price">₹499</div>
         <div class="per">per 30 days · no auto-debit, renew when you want</div>
         <ul>
           <li>1,200 transcription minutes (20 hours)</li>
           <li>All 14+ languages &amp; auto-detect</li>
           <li>Speaker identification</li>
-          <li>AI summaries &amp; Polish</li>
+          <li>AI summaries, Polish &amp; English translation</li>
           <li>Everything in Free</li>
         </ul>
         <a class="btn btn-primary" href="/app.html" style="width:100%">Upgrade in the app</a>
+      </div>
+      <div class="price-card">
+        <div class="plan">Pro</div>
+        <div class="price">₹799</div>
+        <div class="per">per 30 days · best value per hour</div>
+        <ul>
+          <li>2,400 transcription minutes (40 hours)</li>
+          <li>All 14+ languages &amp; auto-detect</li>
+          <li>Speaker identification</li>
+          <li>AI summaries, Polish &amp; English translation</li>
+          <li>Everything in Free</li>
+        </ul>
+        <a class="btn btn-light" href="/app.html" style="width:100%">Upgrade in the app</a>
       </div>
     </div>
   </div>
