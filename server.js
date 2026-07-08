@@ -337,7 +337,12 @@ const server = http.createServer(async (req, res) => {
           content,
         },
       });
-      if (!ins.ok) return sendJson(res, 502, { error: "Could not save transcript." });
+      if (!ins.ok) {
+        let detail = "";
+        try { detail = await ins.text(); } catch (e) {}
+        console.error("History save failed: HTTP " + ins.status + " " + detail.slice(0, 300));
+        return sendJson(res, 502, { error: "Could not save transcript (HTTP " + ins.status + ")." });
+      }
       // Keep only the newest N transcripts for this user.
       const plan = await planStatus(user.id);
       const limit = plan.active ? HISTORY_PAID : HISTORY_FREE;
