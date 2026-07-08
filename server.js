@@ -267,6 +267,7 @@ const server = http.createServer(async (req, res) => {
         supabaseAnonKey: SUPABASE_ANON_KEY,
         freeMinutes: FREE_MINUTES,
         paymentsEnabled: !!(RZP_KEY_ID && RZP_KEY_SECRET),
+        metaPixelId: process.env.META_PIXEL_ID || null,
         plans: Object.keys(PLANS).map((id) => ({
           id,
           label: PLANS[id].label,
