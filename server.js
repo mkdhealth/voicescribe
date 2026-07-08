@@ -609,10 +609,16 @@ const server = http.createServer(async (req, res) => {
       const limitMsg = await limitExceededMessage(user.id);
       if (limitMsg) return sendJson(res, 402, { error: limitMsg });
       const r = await fetch(
-        "https://streaming.assemblyai.com/v3/token?expires_in_seconds=3600",
+        "https://streaming.assemblyai.com/v3/token?expires_in_seconds=600",
         { headers: { authorization: AAI_KEY } }
       );
-      return proxyJsonResponse(res, r);
+      let data;
+      try { data = await r.json(); }
+      catch (e) { data = { error: "Upstream returned non-JSON (HTTP " + r.status + ")" }; }
+      if (!r.ok || !data.token) {
+        console.error("Streaming token failed: HTTP " + r.status + " " + JSON.stringify(data).slice(0, 300));
+      }
+      return sendJson(res, r.status, data);
     }
 
     // ---------- Static files ----------
