@@ -564,6 +564,49 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { response: out.trim() });
     }
 
+    if (p === "/api/minutes" && req.method === "POST") {
+      const raw = await readBody(req, 2 * 1024 * 1024);
+      let parsed;
+      try { parsed = JSON.parse(raw.toString("utf8")); }
+      catch (e) { return sendJson(res, 400, { error: "Invalid JSON" }); }
+      const text = String(parsed.text || "").slice(0, 250000);
+      if (!text.trim()) return sendJson(res, 400, { error: "No text provided" });
+      if (!GEMINI_KEY) {
+        return sendJson(res, 501, { error: "Minutes aren't configured yet — add a GEMINI_API_KEY environment variable." });
+      }
+      const prompt =
+        "You are an expert minute-taker. The following is a meeting transcript, possibly in an Indian " +
+        "language or a mix of languages. Produce clear MEETING MINUTES in English with exactly these sections:\n" +
+        "SUMMARY: 3-6 short bullet points of what was discussed.\n" +
+        "DECISIONS: bullet points of decisions made (write 'None recorded' if none).\n" +
+        "ACTION ITEMS: bullet points as 'Person — task' where the speaker is identifiable, otherwise just the task " +
+        "(write 'None recorded' if none).\n" +
+        "Base everything strictly on the transcript — do not invent details. Keep it concise and professional. " +
+        "Return ONLY the minutes in plain text with those three section headings.\n\nTRANSCRIPT:\n" + text;
+      const r = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-goog-api-key": GEMINI_KEY },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.2 },
+          }),
+        }
+      );
+      let data;
+      try { data = await r.json(); }
+      catch (e) { data = { error: { message: "Upstream returned non-JSON (HTTP " + r.status + ")" } }; }
+      if (!r.ok) {
+        const msg = (data.error && data.error.message) || "Minutes generation failed (HTTP " + r.status + ")";
+        return sendJson(res, r.status, { error: msg });
+      }
+      let out = "";
+      try { out = data.candidates[0].content.parts.map((pt) => pt.text || "").join(""); }
+      catch (e) { return sendJson(res, 502, { error: "Unexpected response from Gemini." }); }
+      return sendJson(res, 200, { response: out.trim() });
+    }
+
     if (p === "/api/translate" && req.method === "POST") {
       const raw = await readBody(req, 2 * 1024 * 1024);
       let parsed;
