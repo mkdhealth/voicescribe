@@ -24,13 +24,14 @@
 </script>
 <style>
   :root {
-    --bg: #0f1117; --panel: #181b24; --panel2: #1f2330; --border: #2a2f3e;
-    --text: #e8eaf0; --muted: #9aa1b2; --accent: #4f7cff; --accent2: #7c5cff;
-    --green: #2ecc8f; --red: #ff5c6c; --yellow: #ffc857;
+    /* Light theme, matched to the stenoji.com landing page */
+    --bg: #F7FAFF; --panel: #FFFFFF; --panel2: #EAF3FF; --border: #D8E6F7;
+    --text: #13233F; --muted: #6B7A90; --accent: #2076F3; --accent2: #4DA3FF;
+    --green: #1A9E6E; --red: #D93036; --yellow: #B45309;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-  header { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  header { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: #fff; }
   .logo { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 18px; overflow: hidden; }
   .logo img { width: 100%; height: 100%; object-fit: cover; }
   header h1 { font-size: 18px; font-weight: 600; }
@@ -41,7 +42,7 @@
   .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
   .panel { display: none; }
   .panel.active { display: block; }
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; box-shadow: 0 10px 30px rgba(8,34,74,.06); }
   .card h2 { font-size: 15px; margin-bottom: 6px; }
   .card .hint { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-bottom: 12px; }
   .card .hint b { color: var(--text); }
@@ -58,10 +59,10 @@
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
   .statusline { font-size: 13px; color: var(--muted); }
   .dropzone { border: 2px dashed var(--border); border-radius: 12px; padding: 34px; text-align: center; color: var(--muted); cursor: pointer; font-size: 14px; transition: border-color 0.15s, background 0.15s; }
-  .dropzone.dragover { border-color: var(--accent); background: rgba(79,124,255,0.06); }
+  .dropzone.dragover { border-color: var(--accent); background: rgba(32,118,243,0.06); }
   .utterance { display: flex; gap: 12px; margin-bottom: 14px; }
   .speaker-chip { flex-shrink: 0; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; height: fit-content; margin-top: 2px; color: #fff; cursor: pointer; user-select: none; }
-  .speaker-chip:hover { outline: 2px solid rgba(255,255,255,0.4); }
+  .speaker-chip:hover { outline: 2px solid rgba(8,34,74,0.3); }
   .utterance .text { flex: 1; }
   .utterance .ts { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
   .summary-card { border-left: 3px solid var(--green); }
@@ -97,7 +98,7 @@
   .auth-card .sub { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 18px; line-height: 1.5; }
   .auth-card input { margin-bottom: 10px; }
   .auth-mascot { width: 84px; height: 84px; border-radius: 50%; display: block; margin: 0 auto; }
-  .btn-google { width: 100%; background: #fff; color: #1a1a1a; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .btn-google { width: 100%; background: #fff; color: #1a1a1a; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid var(--border); }
   .btn-full { width: 100%; }
   .auth-toggle { font-size: 13px; color: var(--muted); text-align: center; margin-top: 14px; }
   .auth-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
@@ -131,7 +132,7 @@
       <div class="usage-line" id="usageLine"></div>
       <div class="usage-bar"><div id="usageFill"></div></div>
     </div>
-    <button id="btnUpgrade" class="hidden" style="background:var(--yellow); color:#1a1a1a; font-weight:700; padding:8px 14px">⭐ Upgrade</button>
+    <button id="btnUpgrade" class="hidden" style="background:#F6A935; color:#3a2500; font-weight:700; padding:8px 14px">⭐ Upgrade</button>
     <button class="secondary" id="btnSignOut" style="padding:8px 14px">Sign out</button>
   </div>
 </header>
@@ -250,7 +251,11 @@
 
     <div class="card summary-card hidden" id="summaryCard-meet">
       <h2>📝 Meeting summary</h2>
-      <div id="summaryBody-meet" style="font-size:14px; line-height:1.6; margin-top:8px"></div>
+      <div id="summaryBody-meet" style="font-size:14px; line-height:1.6; margin-top:8px; white-space:pre-wrap"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopySum-meet">Copy</button>
+        <button class="secondary" id="btnDownloadSum-meet">Download .txt</button>
+      </div>
     </div>
 
     <div class="card hidden" id="resultCard-meet">
@@ -266,6 +271,7 @@
         <button class="secondary" id="btnDownloadAudio-meet">Download recording</button>
         <button class="secondary" id="btnPolish-meet">✨ Polish</button>
         <button class="secondary" id="btnTranslate-meet">🌐 Translate to English</button>
+        <button class="secondary" id="btnMinutes-meet">📝 Generate minutes</button>
       </div>
     </div>
 
@@ -371,7 +377,11 @@
 
     <div class="card summary-card hidden" id="summaryCard-file">
       <h2>📝 Summary</h2>
-      <div id="summaryBody-file" style="font-size:14px; line-height:1.6; margin-top:8px"></div>
+      <div id="summaryBody-file" style="font-size:14px; line-height:1.6; margin-top:8px; white-space:pre-wrap"></div>
+      <div class="toolbar">
+        <button class="secondary" id="btnCopySum-file">Copy</button>
+        <button class="secondary" id="btnDownloadSum-file">Download .txt</button>
+      </div>
     </div>
 
     <div class="card hidden" id="resultCard-file">
@@ -386,6 +396,7 @@
         <button class="secondary" id="btnDownload-file">Download .txt</button>
         <button class="secondary" id="btnPolish-file">✨ Polish</button>
         <button class="secondary" id="btnTranslate-file">🌐 Translate to English</button>
+        <button class="secondary" id="btnMinutes-file">📝 Generate minutes</button>
       </div>
     </div>
 
@@ -926,6 +937,8 @@ function renderTranscript(panel) {
       sBody.appendChild(p);
     });
     $("summaryCard-" + panel).classList.remove("hidden");
+    $("btnCopySum-" + panel).onclick = function () { copyText(t.summary, this); };
+    $("btnDownloadSum-" + panel).onclick = function () { downloadText("summary.txt", t.summary); };
     plain = "SUMMARY\n" + t.summary + "\n\n---\n\nTRANSCRIPT\n\n" + plain;
   }
   plainTexts[panel] = plain;
@@ -1033,6 +1046,37 @@ function wireTranslate(panel) {
 }
 wireTranslate("meet");
 wireTranslate("file");
+
+/* ================= MEETING MINUTES (via Gemini, any language) ================= */
+function wireMinutes(panel) {
+  $("btnMinutes-" + panel).addEventListener("click", async function () {
+    if (!plainTexts[panel]) return;
+    var btn = this, orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Generating…";
+    try {
+      var r = await authFetch("/api/minutes", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text: plainTexts[panel] })
+      });
+      var d = await r.json();
+      if (!r.ok || d.error) throw new Error(d.error || "Minutes failed (HTTP " + r.status + ")");
+      var out = d.response || "";
+      $("summaryBody-" + panel).textContent = out;
+      $("summaryCard-" + panel).classList.remove("hidden");
+      $("btnCopySum-" + panel).onclick = function () { copyText(out, this); };
+      $("btnDownloadSum-" + panel).onclick = function () { downloadText("meeting-minutes.txt", out); };
+      $("summaryCard-" + panel).scrollIntoView({ behavior: "smooth" });
+    } catch (e) {
+      alert("Could not generate minutes: " + e.message);
+    }
+    btn.disabled = false;
+    btn.textContent = orig;
+  });
+}
+wireMinutes("meet");
+wireMinutes("file");
 
 $("btnTranslateLive").addEventListener("click", async function () {
   if (!userPlan.active) { translateUpsell(); return; }
