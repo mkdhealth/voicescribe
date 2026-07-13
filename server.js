@@ -681,7 +681,13 @@ const server = http.createServer(async (req, res) => {
       const full = path.join(PUBLIC_DIR, file);
       if (!full.startsWith(PUBLIC_DIR)) { res.writeHead(403); return res.end(); }
       if (fs.existsSync(full) && fs.statSync(full).isFile()) {
-        res.writeHead(200, { "content-type": MIME[path.extname(full)] || "application/octet-stream" });
+        // Cache images and icons aggressively (they never change); HTML stays fresh.
+        const ext = path.extname(full);
+        const longCache = [".png", ".webp", ".jpg", ".jpeg", ".svg", ".ico"].includes(ext);
+        res.writeHead(200, {
+          "content-type": MIME[ext] || "application/octet-stream",
+          "cache-control": longCache ? "public, max-age=604800" : "public, max-age=300",
+        });
         return fs.createReadStream(full).pipe(res);
       }
     }
