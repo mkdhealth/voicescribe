@@ -295,14 +295,14 @@ const server = http.createServer(async (req, res) => {const ALLOWED_ORIGINS = [
       });
     }
 
-    // ---------- Everything under /api requires sign-in ----------
+// ---------- Everything under /api requires sign-in ----------
     let user = null;
     if (p.startsWith("/api/")) {
       user = await getUser(req);
       const hasNotesKey = req.headers["x-notes-key"] === process.env.NOTES_API_KEY;
-    if (!user && !hasNotesKey) return unauthorized(res);
+      if (!user && hasNotesKey) user = { id: "notes-app" };
+      if (!user && !hasNotesKey) return unauthorized(res);
     }
-
     if (p === "/api/me" && req.method === "GET") {
       const [used, plan] = await Promise.all([usedSecondsThisMonth(user.id), planStatus(user.id)]);
       return sendJson(res, 200, {
