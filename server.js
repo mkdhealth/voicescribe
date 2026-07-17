@@ -182,6 +182,7 @@ function monthStartIso() {
 }
 
 async function usedSecondsThisMonth(userId) {
+  if (userId === "notes-app") return 0;
   const r = await sbRest(
     "usage_events?select=seconds&user_id=eq." + userId +
     "&created_at=gte." + encodeURIComponent(monthStartIso())
