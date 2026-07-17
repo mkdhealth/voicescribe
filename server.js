@@ -262,7 +262,17 @@ async function billTranscript(userId, transcriptId, seconds) {
 }
 
 /* ---------------- HTTP server ---------------- */
-const server = http.createServer(async (req, res) => {
+const server = http.createServer(async (req, res) => {const ALLOWED_ORIGINS = [
+    "https://my-notes-eta-seven.vercel.app",
+    "http://localhost:5173",
+  ];
+  const origin = req.headers.origin || "";
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "content-type");
+  }
+  if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
   const url = new URL(req.url, "http://localhost");
   const p = url.pathname;
 
