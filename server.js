@@ -299,7 +299,8 @@ const server = http.createServer(async (req, res) => {const ALLOWED_ORIGINS = [
     let user = null;
     if (p.startsWith("/api/")) {
       user = await getUser(req);
-      if (!user) return unauthorized(res);
+      const hasNotesKey = req.headers["x-notes-key"] === process.env.NOTES_API_KEY;
+    if (!user && !hasNotesKey) return unauthorized(res);
     }
 
     if (p === "/api/me" && req.method === "GET") {
